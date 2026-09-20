@@ -13,6 +13,7 @@
             --accent-yellow: #ffe082;
             --accent-blue: #81d4fa;
             --accent-green: #00e676;
+            --accent-red: #ff5252;
             --clock-font: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
             --dashboard-scale: 1;
         }
@@ -125,6 +126,15 @@
             transition: opacity 0.2s;
         }
         .action-btn:hover { opacity: 0.85; }
+
+        .danger-btn {
+            background: rgba(255, 82, 82, 0.2); border: 1px solid var(--accent-red); color: var(--accent-red);
+            padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .danger-btn:hover {
+            background: var(--accent-red); color: #ffffff;
+        }
 
         .file-upload-label {
             background: rgba(255, 255, 255, 0.08); border: 1px dashed rgba(255, 255, 255, 0.3);
@@ -353,7 +363,6 @@
             <input type="range" id="brightnessSlider" class="slider-input" min="10" max="100" value="100" oninput="changeBrightness(this.value)">
         </div>
 
-        <!-- [기본 10초 선택 설정] -->
         <div class="setting-item">
             <span class="setting-label">🔄 배경 자동 랜덤 슬라이드쇼</span>
             <select id="slideshowSelect" class="select-input" onchange="changeSlideshowInterval(this.value)">
@@ -395,7 +404,10 @@
         </div>
 
         <div class="setting-item">
-            <span class="setting-label">🖼️ 배경 갤러리</span>
+            <div class="setting-label">
+                <span>🖼️ 배경 갤러리</span>
+                <button class="danger-btn" onclick="clearAllGalleryImages()">🗑️ 전체 비우기</button>
+            </div>
             <div id="galleryGrid" class="gallery-grid"></div>
         </div>
     </div>
@@ -419,6 +431,8 @@
 
     <script>
         const RENDER_BACKEND_URL = "https://naeun-radio.onrender.com";
+        // 지정 고정 기본 구글 포토 앨범 URL
+        const DEFAULT_FIXED_GOOGLE_PHOTOS_URL = "https://photos.app.goo.gl/qSyFwXqYZ7ZhYovp8";
 
         function sendAppMessage(type, payload = {}) {
             if (window.ReactNativeWebView) {
@@ -506,13 +520,32 @@
             } catch(e) {}
         }
 
+        // [고도화] 새 기기/접속 시 기본 구글 포토 앨범 자동 연동
         async function fetchSharedPhotoAlbum() {
             try {
                 const res = await fetch(`${RENDER_BACKEND_URL}/api/shared_photo_album`);
                 const data = await res.json();
                 if (data.status === 'success' && data.data && data.data.images && data.data.images.length > 0) {
-                    document.getElementById('googlePhotoUrlInput').value = data.data.url || '';
+                    document.getElementById('googlePhotoUrlInput').value = data.data.url || DEFAULT_FIXED_GOOGLE_PHOTOS_URL;
                     galleryImages = data.data.images;
+                    saveGalleryState();
+                    renderGallery();
+                } else {
+                    // 서버에 보관된 앨범이 없거나 비어있는 경우 기본 구글 포토 파싱 자동 가동
+                    autoLoadDefaultGooglePhotos();
+                }
+            } catch(e) {
+                autoLoadDefaultGooglePhotos();
+            }
+        }
+
+        async function autoLoadDefaultGooglePhotos() {
+            try {
+                const res = await fetch(`${RENDER_BACKEND_URL}/api/parse_google_photos?url=${encodeURIComponent(DEFAULT_FIXED_GOOGLE_PHOTOS_URL)}`);
+                const data = await res.json();
+                if (data.status === 'success' && data.images && data.images.length > 0) {
+                    document.getElementById('googlePhotoUrlInput').value = DEFAULT_FIXED_GOOGLE_PHOTOS_URL;
+                    galleryImages = data.images;
                     saveGalleryState();
                     renderGallery();
                 }
@@ -763,7 +796,6 @@
             document.getElementById('alarmTimeInput').value = alarmTime;
             document.getElementById('alarmChannelSelect').value = alarmChannel;
 
-            // [기본 10초 슬라이드쇼 간격 설정 및 가동]
             const savedSlideshowInterval = localStorage.getItem('smart_slideshow_interval') || '10000';
             document.getElementById('slideshowSelect').value = savedSlideshowInterval;
             changeSlideshowInterval(savedSlideshowInterval);
@@ -774,13 +806,7 @@
         }
 
         // 5. 배경화면 & 갤러리 관리
-        const DEFAULT_PRESETS = [
-            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
-            "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80",
-            "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1920&q=80"
-        ];
-
-        let galleryImages = JSON.parse(localStorage.getItem('smart_clock_bgs')) || DEFAULT_PRESETS;
+        let galleryImages = JSON.parse(localStorage.getItem('smart_clock_bgs')) || [];
         let selectedBgIndex = parseInt(localStorage.getItem('smart_clock_bg_idx') || '0');
         let slideshowTimer = null;
 
@@ -798,8 +824,7 @@
 
         async function fetchGooglePhotoAlbum() {
             const input = document.getElementById('googlePhotoUrlInput');
-            const albumUrl = input.value.trim();
-            if (!albumUrl) return alert("구글 포토 공유 앨범 링크를 입력해 주세요!");
+            const albumUrl = input.value.trim() || DEFAULT_FIXED_GOOGLE_PHOTOS_URL;
 
             try {
                 const res = await fetch(`${RENDER_BACKEND_URL}/api/parse_google_photos?url=${encodeURIComponent(albumUrl)}`);
@@ -810,7 +835,7 @@
                     selectedBgIndex = 0;
                     saveGalleryState();
                     renderGallery();
-                    alert(`🌐 구글 포토 앨범(${data.images.length}장)이 서버에 변경 등록되었습니다! (모든 접속자에게 반영됩니다)`);
+                    alert(`🌐 구글 포토 앨범(${data.images.length}장)이 서버에 변경 등록되었습니다!`);
                 } else {
                     alert(data.message || "사진을 수집할 수 없습니다.");
                 }
@@ -863,7 +888,6 @@
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
-        // 무작위(Random) 배경 사진 전환 함수
         function nextRandomBg() {
             if (galleryImages.length === 0) return;
             if (galleryImages.length === 1) {
@@ -890,12 +914,22 @@
             saveGalleryState(); renderGallery();
         }
 
+        function clearAllGalleryImages() {
+            if (galleryImages.length === 0) return alert("갤러리에 삭제할 사진이 없습니다.");
+            if (confirm("정말 모든 배경 사진을 삭제하시겠습니까? 삭제 후에는 되돌릴 수 없습니다.")) {
+                galleryImages = [];
+                selectedBgIndex = -1;
+                saveGalleryState();
+                renderGallery();
+                alert("🗑️ 배경 갤러리의 모든 사진이 삭제되었습니다.");
+            }
+        }
+
         function saveGalleryState() {
             localStorage.setItem('smart_clock_bgs', JSON.stringify(galleryImages));
             localStorage.setItem('smart_clock_bg_idx', selectedBgIndex);
         }
 
-        // 슬라이드쇼 간격 설정 및 저장
         function changeSlideshowInterval(ms) {
             if (slideshowTimer) clearInterval(slideshowTimer);
             const interval = parseInt(ms);
