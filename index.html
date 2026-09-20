@@ -160,7 +160,6 @@
             display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
         }
 
-        /* 대시보드 뷰포트 레이아웃 및 0%~300% 스케일링 */
         .dashboard-container {
             position: relative; z-index: 2; display: flex; flex-direction: column;
             justify-content: center; align-items: center; height: 100vh; width: 100vw;
@@ -354,13 +353,14 @@
             <input type="range" id="brightnessSlider" class="slider-input" min="10" max="100" value="100" oninput="changeBrightness(this.value)">
         </div>
 
+        <!-- [기본 10초 선택 설정] -->
         <div class="setting-item">
-            <span class="setting-label">🔄 배경 자동 슬라이드쇼</span>
+            <span class="setting-label">🔄 배경 자동 랜덤 슬라이드쇼</span>
             <select id="slideshowSelect" class="select-input" onchange="changeSlideshowInterval(this.value)">
                 <option value="0">사용 안함</option>
-                <option value="10000">10초 마다</option>
-                <option value="30000">30초 마다</option>
-                <option value="60000">1분 마다</option>
+                <option value="10000" selected>10초 마다 (랜덤)</option>
+                <option value="30000">30초 마다 (랜덤)</option>
+                <option value="60000">1분 마다 (랜덤)</option>
             </select>
         </div>
 
@@ -763,6 +763,11 @@
             document.getElementById('alarmTimeInput').value = alarmTime;
             document.getElementById('alarmChannelSelect').value = alarmChannel;
 
+            // [기본 10초 슬라이드쇼 간격 설정 및 가동]
+            const savedSlideshowInterval = localStorage.getItem('smart_slideshow_interval') || '10000';
+            document.getElementById('slideshowSelect').value = savedSlideshowInterval;
+            changeSlideshowInterval(savedSlideshowInterval);
+
             fetchSharedDday();
             fetchSharedPhotoAlbum();
             initGPSLocation();
@@ -858,17 +863,24 @@
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
-        function nextBg() {
+        // 무작위(Random) 배경 사진 전환 함수
+        function nextRandomBg() {
             if (galleryImages.length === 0) return;
-            selectedBgIndex = (selectedBgIndex + 1) % galleryImages.length;
-            saveGalleryState(); renderGallery();
+            if (galleryImages.length === 1) {
+                selectedBgIndex = 0;
+            } else {
+                let randomIndex = selectedBgIndex;
+                while (randomIndex === selectedBgIndex) {
+                    randomIndex = Math.floor(Math.random() * galleryImages.length);
+                }
+                selectedBgIndex = randomIndex;
+            }
+            saveGalleryState();
+            renderGallery();
         }
 
-        function prevBg() {
-            if (galleryImages.length === 0) return;
-            selectedBgIndex = (selectedBgIndex - 1 + galleryImages.length) % galleryImages.length;
-            saveGalleryState(); renderGallery();
-        }
+        function nextBg() { nextRandomBg(); }
+        function prevBg() { nextRandomBg(); }
 
         function selectBg(index) { selectedBgIndex = index; saveGalleryState(); renderGallery(); }
         function deleteBg(e, index) {
@@ -883,11 +895,13 @@
             localStorage.setItem('smart_clock_bg_idx', selectedBgIndex);
         }
 
+        // 슬라이드쇼 간격 설정 및 저장
         function changeSlideshowInterval(ms) {
             if (slideshowTimer) clearInterval(slideshowTimer);
             const interval = parseInt(ms);
+            localStorage.setItem('smart_slideshow_interval', interval);
             if (interval > 0) {
-                slideshowTimer = setInterval(() => { nextBg(); }, interval);
+                slideshowTimer = setInterval(() => { nextRandomBg(); }, interval);
             }
         }
 
@@ -903,8 +917,8 @@
                     bgContainer.style.backgroundImage = `url('${currentImgUrl}')`;
                 };
                 imgCheck.onerror = () => {
-                    console.warn('[Image Load Error]: Switching to next image');
-                    nextBg();
+                    console.warn('[Image Load Error]: Switching to next random image');
+                    nextRandomBg();
                 };
                 imgCheck.src = currentImgUrl;
             } else {
@@ -941,8 +955,7 @@
             if (document.getElementById('settings-panel').classList.contains('open')) return;
 
             if (Math.abs(diffY) > 50) {
-                if (diffY > 0) nextBg();
-                else prevBg();
+                nextRandomBg();
             }
         }, { passive: true });
 
@@ -952,13 +965,12 @@
             if (wheelThrottle) return;
 
             wheelThrottle = true;
-            if (e.deltaY > 0) nextBg();
-            else prevBg();
+            nextRandomBg();
 
             setTimeout(() => { wheelThrottle = false; }, 600);
         });
 
-        // 7. 오디오 엔진 (메모리 해제 클린업 완료)
+        // 7. 오디오 엔진
         const mainAudio = document.getElementById('mainAudio');
         let currentType = 'none';
         let hlsPlayer = null;
