@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>스마트 홈 대시보드 & 라디오</title>
-    <!-- HLS.js 오디오 스트리밍 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
@@ -32,7 +31,6 @@
             filter: brightness(1);
         }
 
-        /* 컨트롤 바 및 상단 버튼 패널 */
         .top-radio-bar {
             position: fixed; top: 12px; right: 12px; z-index: 99999;
             display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
@@ -73,7 +71,6 @@
             border-color: rgba(255, 255, 255, 0.25);
         }
 
-        /* 우측 슬라이딩 설정 패널 */
         #settings-panel {
             position: fixed; top: 0; right: -420px;
             width: 380px; height: 100vh;
@@ -138,7 +135,6 @@
             display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
         }
 
-        /* 대시보드 센터 레이아웃 */
         .dashboard-container {
             position: relative; z-index: 2; display: flex; flex-direction: column;
             justify-content: center; align-items: center; height: 100vh; width: 100vw;
@@ -233,7 +229,7 @@
         </div>
 
         <div class="setting-item">
-            <span class="setting-label">🖼️ 구글 포토 앨범 자동 가져오기</span>
+            <span class="setting-label">🖼️ 구글 포토 앨범 가져오기</span>
             <div class="url-input-container">
                 <input type="text" id="googlePhotoUrlInput" class="text-input" placeholder="https://photos.app.goo.gl/...">
                 <button class="action-btn" onclick="fetchGooglePhotoAlbum()">가져오기</button>
@@ -286,6 +282,9 @@
     </div>
 
     <script>
+        // Render.com 백엔드 주소 연동
+        const RENDER_BACKEND_URL = "https://naeun-radio.onrender.com";
+
         // 1. 실시간 시계 & D-Day
         function updateClock() {
             const now = new Date();
@@ -313,7 +312,7 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        // 2. Open-Meteo 상세 날씨 정보
+        // 2. Open-Meteo 날씨 정보
         async function fetchWeather() {
             try {
                 const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia%2FSeoul");
@@ -379,36 +378,28 @@
         }
         loadCloudConfig();
 
-        // [프론트 단독] 구글 포토 앨범 프록시 파서
+        // 백엔드 연동 구글 포토 파서
         async function fetchGooglePhotoAlbum() {
             const input = document.getElementById('googlePhotoUrlInput');
             const albumUrl = input.value.trim();
             if (!albumUrl) return alert("구글 포토 공유 앨범 링크를 입력해 주세요!");
 
             try {
-                // 오픈 CORS 프록시 서비스 활용
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(albumUrl)}`;
-                const res = await fetch(proxyUrl);
+                const res = await fetch(`${RENDER_BACKEND_URL}/api/parse_google_photos?url=${encodeURIComponent(albumUrl)}`);
                 const data = await res.json();
 
-                if (data.contents) {
-                    const regex = /(https:\/\/lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9\-_]+)=w/g;
-                    const matches = [...data.contents.matchAll(regex)];
-                    const imageUrls = Array.from(new Set(matches.map(m => `${m[1]}=w1920-h1080-no`)));
-
-                    if (imageUrls.length > 0) {
-                        galleryImages = [...imageUrls, ...galleryImages];
-                        selectedBgIndex = 0;
-                        input.value = '';
-                        saveGalleryState();
-                        renderGallery();
-                        alert(`구글 포토 앨범에서 ${imageUrls.length}개의 사진을 성공적으로 가져왔습니다!`);
-                    } else {
-                        alert("앨범 내에서 이미지를 찾을 수 없습니다. 앨범이 공개로 설정되었는지 확인하세요.");
-                    }
+                if (data.status === 'success' && data.images.length > 0) {
+                    galleryImages = [...data.images, ...galleryImages];
+                    selectedBgIndex = 0;
+                    input.value = '';
+                    saveGalleryState();
+                    renderGallery();
+                    alert(`구글 포토 앨범에서 ${data.images.length}개의 사진을 성공적으로 가져왔습니다!`);
+                } else {
+                    alert(data.message || "구글 포토 사진을 가져올 수 없습니다.");
                 }
             } catch(e) {
-                alert("구글 포토 앨범 정보를 불러오는 도중 오류가 발생했습니다.");
+                alert("백엔드 서버 통신 에러가 발생했습니다. Render.com 백엔드 가동 상태를 확인해 주세요.");
             }
         }
 
@@ -544,28 +535,46 @@
             setTimeout(() => { wheelThrottle = false; }, 600);
         });
 
-        // 6. 독립 가동 오디오 & 라디오 엔진 (백엔드 미의존)
+        // 6. 백엔드 연동 라디오 엔진
         const mainAudio = document.getElementById('mainAudio');
         let currentType = 'none';
         let hlsPlayer = null;
         let audioCtx = null;
         let noiseNode = null;
 
-        // 직통 HLS 및 메인 스트림 주소
-        const RADIO_STREAMS = {
-            mbc: "https://sf.cdn.imbc.com/sf/sf_sfm/_definst_/sf_sfm.stream/playlist.m3u8",
-            kbs: "https://kbsfmchannel.kbs.co.kr/hls/live/2004245/1fm/master.m3u8",
-            kbsCool: "https://kbsfmchannel.kbs.co.kr/hls/live/2004246/2fm/master.m3u8",
-            sbsPower: "https://gorealra.sbs.co.kr/gorealra/powerfm.m3u8",
-            bbcKids: "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service",
-            disney: "https://stream.klassikradio.de/disney/mp3-128/stream.klassikradio.de/"
-        };
+        async function getRadioStreamUrl(type) {
+            if (type === 'bbcKids') return "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service";
+            if (type === 'disney') return "https://stream.klassikradio.de/disney/mp3-128/stream.klassikradio.de/";
+            
+            const channelMap = {
+                mbc: 'mbc_fm',
+                kbs: 'kbs_classic',
+                kbsCool: 'kbs_cool',
+                sbsPower: 'sbs_power'
+            };
+
+            if (channelMap[type]) {
+                try {
+                    const res = await fetch(`${RENDER_BACKEND_URL}/api/get_stream_url?ch=${channelMap[type]}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'success' && data.url) return data.url;
+                    }
+                } catch(e) {}
+
+                if (type === 'mbc') return "https://sf.cdn.imbc.com/sf/sf_sfm/_definst_/sf_sfm.stream/playlist.m3u8";
+                if (type === 'kbs') return "https://kbsfmchannel.kbs.co.kr/hls/live/2004245/1fm/master.m3u8";
+                if (type === 'kbsCool') return "https://kbsfmchannel.kbs.co.kr/hls/live/2004246/2fm/master.m3u8";
+                if (type === 'sbsPower') return "https://gorealra.sbs.co.kr/gorealra/powerfm.m3u8";
+            }
+            return "";
+        }
 
         async function playRadioStream(type) {
             stopSynthesizedNoise();
             if (hlsPlayer) { hlsPlayer.destroy(); hlsPlayer = null; }
 
-            const url = RADIO_STREAMS[type];
+            const url = await getRadioStreamUrl(type);
             if (!url) return;
 
             if (url.includes('.m3u8')) {
