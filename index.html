@@ -3,282 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>스마트 대시보드 & 라디오</title>
-    <!-- HLS.js 스트리밍 지원 라이브러리 -->
+    <title>스마트 홈 대시보드 & 라디오</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
-            --bg-glass: rgba(0, 0, 0, 0.65);
-            --border-glass: rgba(255, 255, 255, 0.25);
-            --accent-yellow: #ffeb3b;
+            --bg-glass: rgba(10, 14, 23, 0.65);
+            --border-glass: rgba(255, 255, 255, 0.18);
+            --accent-yellow: #ffe082;
             --accent-blue: #81d4fa;
-            --accent-green: #2e7d32;
+            --accent-green: #00e676;
+            --accent-pink: #ff80ab;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         html, body {
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #111119;
-            color: #ffffff;
-            user-select: none;
-            -webkit-user-select: none;
+            width: 100vw; height: 100vh; overflow: hidden;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #05070a; color: #ffffff;
+            user-select: none; -webkit-user-select: none;
+            touch-action: none;
         }
 
-        /* 배경 레이어 및 transition 효과 */
         #bg-container {
-            position: absolute;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            z-index: 1;
-            transition: filter 0.3s ease, background-image 0.8s ease-in-out;
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            z-index: 1; transition: filter 0.4s ease, background-image 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             filter: brightness(1);
         }
 
-        /* 상단 라디오 컨트롤 바 */
         .top-radio-bar {
-            position: fixed;
-            top: 0;
-            right: 0;
-            z-index: 9999;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
+            position: fixed; top: 12px; right: 12px; z-index: 99999;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
         }
 
-        .radio-btn-container { display: flex; gap: 0; }
+        .radio-btn-row {
+            display: flex; gap: 6px; background: rgba(8, 10, 15, 0.7);
+            padding: 4px 6px; border-radius: 16px;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
 
         .radio-icon-btn, .settings-btn {
-            background: rgba(0, 0, 0, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-top: none;
-            border-right: none;
-            color: #ffffff;
-            height: 44px;
-            padding: 0 14px;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            backdrop-filter: blur(12px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px; color: #f1f5f9; height: 36px; padding: 0 12px;
+            font-size: 12px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .radio-icon-btn:first-child { border-radius: 0 0 0 14px; }
+        .radio-icon-btn:hover, .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.22);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
         .radio-active {
-            background: var(--accent-green) !important;
-            border-color: var(--accent-blue) !important;
-            box-shadow: 0 0 15px rgba(129, 212, 250, 0.6);
+            background: rgba(0, 230, 118, 0.25) !important;
+            border-color: var(--accent-green) !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);
         }
 
         .settings-btn {
-            background: rgba(40, 40, 50, 0.9);
-            border-left: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.25);
         }
 
-        /* 우측 사이드바 설정 패널 */
         #settings-panel {
-            position: fixed;
-            top: 0; right: -380px;
-            width: 360px; height: 100vh;
-            background: rgba(20, 20, 30, 0.95);
-            backdrop-filter: blur(15px);
-            border-left: 1px solid rgba(255, 255, 255, 0.2);
-            z-index: 10000;
-            padding: 24px 20px;
-            display: flex; flex-direction: column; gap: 20px;
-            transition: right 0.3s ease-in-out;
-            overflow-y: auto;
+            position: fixed; top: 0; right: -420px;
+            width: 380px; height: 100vh;
+            background: rgba(10, 13, 20, 0.92); backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-left: 1px solid rgba(255, 255, 255, 0.15); z-index: 100000;
+            padding: 24px 20px; display: flex; flex-direction: column; gap: 18px;
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1); overflow-y: auto;
+            box-shadow: -15px 0 35px rgba(0, 0, 0, 0.6);
+            touch-action: pan-y;
         }
 
         #settings-panel.open { right: 0; }
 
         .panel-header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15); padding-bottom: 12px;
         }
 
-        .panel-close-btn {
-            background: none; border: none; color: #fff; font-size: 20px; cursor: pointer;
-        }
-
-        .setting-item { display: flex; flex-direction: column; gap: 8px; }
-        .setting-label { font-size: 14px; font-weight: bold; color: var(--accent-blue); }
-
-        .slider-input {
-            width: 100%; cursor: pointer; accent-color: var(--accent-blue);
-        }
-
-        .url-input-container {
-            display: flex; gap: 6px;
-        }
-
+        .panel-close-btn { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; }
+        .setting-item { display: flex; flex-direction: column; gap: 6px; }
+        .setting-label { font-size: 13px; font-weight: bold; color: var(--accent-blue); display: flex; justify-content: space-between; align-items: center; }
+        .slider-input { width: 100%; cursor: pointer; accent-color: var(--accent-blue); }
+        .url-input-container { display: flex; gap: 6px; }
+        
         .text-input {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            padding: 8px 10px;
-            color: #fff;
-            font-size: 12px;
-            outline: none;
+            flex: 1; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px; padding: 8px 12px; color: #fff; font-size: 12px; outline: none;
+            transition: border-color 0.2s;
         }
+        .text-input:focus { border-color: var(--accent-blue); }
 
         .action-btn {
-            background: var(--accent-green);
-            border: none;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
+            background: var(--accent-blue); border: none; color: #000;
+            padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: bold; cursor: pointer;
         }
 
-        /* 갤러리 그리드 */
-        .gallery-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px;
+        .file-upload-label {
+            background: rgba(255, 255, 255, 0.08); border: 1px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; font-size: 12px;
+            transition: background 0.2s;
         }
+        .file-upload-label:hover { background: rgba(255, 255, 255, 0.15); }
 
+        .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 4px; }
         .gallery-card {
-            position: relative; height: 90px; border-radius: 8px; overflow: hidden;
-            border: 2px solid transparent; cursor: pointer;
-            background-size: cover; background-position: center;
+            position: relative; height: 85px; border-radius: 10px; overflow: hidden;
+            border: 2px solid transparent; cursor: pointer; background-size: cover; background-position: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .gallery-card:hover { transform: scale(1.02); }
+        .gallery-card.selected { border-color: var(--accent-yellow); box-shadow: 0 0 12px rgba(255, 224, 130, 0.5); }
+        
+        .card-btn-group {
+            position: absolute; top: 4px; right: 4px; display: flex; gap: 4px;
+        }
+        .gallery-btn {
+            background: rgba(0, 0, 0, 0.75); border: none; color: white;
+            width: 24px; height: 24px; border-radius: 50%; font-size: 11px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
         }
 
-        .gallery-card.selected { border-color: var(--accent-yellow); }
-
-        .gallery-del-btn {
-            position: absolute; top: 4px; right: 4px;
-            background: rgba(200, 0, 0, 0.8); border: none; color: white;
-            width: 22px; height: 22px; border-radius: 50%;
-            font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-        }
-
-        /* 메인 대시보드 레이아웃 */
         .dashboard-container {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            width: 100vw;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
-            text-align: center;
-            gap: 18px;
-            padding-top: 20px;
+            position: relative; z-index: 2; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; height: 100vh; width: 100vw;
+            text-align: center; gap: min(2.2vh, 18px); padding: 10px 0;
+            pointer-events: none;
         }
 
+        /* Date & D-Day Card */
         .date-card {
-            background: rgba(0, 0, 0, 0.55);
-            padding: 8px 30px;
-            border-radius: 30px;
-            backdrop-filter: blur(10px);
-            border: 1.5px solid var(--border-glass);
-            font-size: min(4.5vw, 38px);
-            font-weight: 800;
-            display: inline-flex;
-            align-items: center;
-            gap: 14px;
+            background: var(--bg-glass); padding: min(1.2vh, 8px) min(3vw, 26px); border-radius: 30px;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass); font-size: min(3.6vh, 32px); font-weight: 800;
+            display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
         }
 
         .dday-tag {
-            color: var(--accent-yellow);
-            background: rgba(255, 235, 59, 0.15);
-            padding: 2px 14px;
-            border-radius: 16px;
-            border: 1.5px solid rgba(255, 235, 59, 0.5);
-            font-weight: 900;
+            color: var(--accent-yellow); background: rgba(255, 224, 130, 0.18);
+            padding: 3px 14px; border-radius: 16px; border: 1.5px solid rgba(255, 224, 130, 0.5); font-weight: 900;
         }
 
+        /* Digital Clock */
         .time-text {
-            font-size: min(23vw, 200px);
-            font-weight: 900;
-            line-height: 0.85;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: -4px;
+            font-size: min(22vh, 19vw); font-weight: 900; line-height: 0.82;
+            font-variant-numeric: tabular-nums; letter-spacing: -3px;
+            color: #ffffff !important;
+            text-shadow: 0 6px 35px rgba(0, 0, 0, 0.95), 0 0 18px rgba(0, 0, 0, 0.8);
         }
 
+        /* Weather Card */
         .weather-card {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: min(6.5vw, 60px);
-            font-weight: 900;
-            background: var(--bg-glass);
-            padding: 8px 36px;
-            border-radius: 40px;
-            backdrop-filter: blur(10px);
-            border: 1.5px solid var(--border-glass);
-            gap: 24px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: min(5.5vh, 48px); font-weight: 900; background: var(--bg-glass);
+            padding: min(1.2vh, 8px) min(4vw, 32px); border-radius: 40px; backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border-glass); gap: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
         }
 
-        .divider {
-            width: 3px;
-            height: 38px;
-            background-color: rgba(255, 255, 255, 0.3);
-            border-radius: 2px;
-        }
-
+        .divider { width: 3px; height: min(3.5vh, 30px); background-color: rgba(255, 255, 255, 0.25); border-radius: 2px; }
         .temp-color { color: var(--accent-yellow); }
         .hum-color { color: var(--accent-blue); }
 
+        /* Quote Card */
         .quote-card {
-            background: var(--bg-glass);
-            padding: 12px 30px;
-            border-radius: 24px;
-            backdrop-filter: blur(10px);
-            border: 1.5px solid var(--border-glass);
-            max-width: 85%;
+            background: var(--bg-glass); padding: min(1.4vh, 10px) min(3vw, 28px); border-radius: 20px;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass); max-width: 80%;
+            transition: opacity 0.5s ease-in-out;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
         }
 
-        .quote-text {
-            font-size: min(3.8vw, 28px);
-            font-weight: 700;
-            color: #f1f5f9;
-            word-break: keep-all;
-        }
-
-        .quote-author {
-            font-size: min(2.3vw, 18px);
-            font-weight: 500;
-            color: #cbd5e1;
-            margin-top: 4px;
-        }
+        .quote-text { font-size: min(3vh, 24px); font-weight: 700; color: #ffffff; word-break: keep-all; }
+        .quote-author { font-size: min(2vh, 15px); font-weight: 500; color: #cbd5e1; margin-top: 2px; }
     </style>
 </head>
 <body>
     <div id="bg-container"></div>
     <audio id="mainAudio" preload="none" crossorigin="anonymous"></audio>
 
-    <!-- 상단 라디오 및 설정 메뉴 바 -->
+    <!-- Top Radio Control Bar -->
     <div class="top-radio-bar">
-        <div class="radio-btn-container">
+        <div class="radio-btn-row">
             <button id="feedNoiseBtn" class="radio-icon-btn" onclick="toggleRadio('feedNoise')"><span>🍼</span><span>수유소음</span></button>
             <button id="sleepNoiseBtn" class="radio-icon-btn" onclick="toggleRadio('sleepNoise')"><span>🌙</span><span>수면소음</span></button>
-            <button id="bbcKidsBtn" class="radio-icon-btn" onclick="toggleRadio('bbcKids')"><span>🇬🇧</span><span>BBC 라디오</span></button>
-            <button id="disneyBtn" class="radio-icon-btn" onclick="toggleRadio('disney')"><span>🏰</span><span>디즈니 OST</span></button>
             <button id="mbcBtn" class="radio-icon-btn" onclick="toggleRadio('mbc')"><span>📻</span><span>MBC 95.9</span></button>
             <button id="kbsBtn" class="radio-icon-btn" onclick="toggleRadio('kbs')"><span>🎻</span><span>KBS 클래식</span></button>
             <button class="settings-btn" onclick="toggleSettingsPanel()">⚙️ 설정</button>
         </div>
+        <div class="radio-btn-row">
+            <button id="bbcKidsBtn" class="radio-icon-btn" onclick="toggleRadio('bbcKids')"><span>🇬🇧</span><span>BBC World</span></button>
+            <button id="disneyBtn" class="radio-icon-btn" onclick="toggleRadio('disney')"><span>🏰</span><span>디즈니 OST</span></button>
+            <button id="sbsPowerBtn" class="radio-icon-btn" onclick="toggleRadio('sbsPower')"><span>📻</span><span>SBS 107.7</span></button>
+            <button id="kbsCoolBtn" class="radio-icon-btn" onclick="toggleRadio('kbsCool')"><span>🎧</span><span>KBS 89.1</span></button>
+        </div>
     </div>
 
-    <!-- 우측 설정 및 이미지 패널 -->
+    <!-- Settings Slide Panel -->
     <div id="settings-panel">
         <div class="panel-header">
-            <h3>⚙️ 대시보드 설정</h3>
+            <h3>⚙️ 대시보드 & 스토리지</h3>
             <button class="panel-close-btn" onclick="toggleSettingsPanel()">✕</button>
         </div>
 
@@ -288,7 +222,31 @@
         </div>
 
         <div class="setting-item">
-            <span class="setting-label">🔗 이미지 URL 추가 (공용 저장소/Imgur 등)</span>
+            <span class="setting-label">🔄 배경 자동 슬라이드쇼</span>
+            <select id="slideshowSelect" class="text-input" onchange="changeSlideshowInterval(this.value)">
+                <option value="0">사용 안함</option>
+                <option value="10000">10초 마다</option>
+                <option value="30000">30초 마다</option>
+                <option value="60000">1분 마다</option>
+            </select>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">☁️ Cloudinary 클라우드 설정</span>
+            <input type="text" id="cloudNameInput" class="text-input" placeholder="Cloud Name (예: demo)" onchange="saveCloudConfig()">
+            <input type="text" id="uploadPresetInput" class="text-input" placeholder="Unsigned Upload Preset" onchange="saveCloudConfig()">
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">📤 클라우드로 이미지 업로드</span>
+            <label class="file-upload-label">
+                📂 사진 파일 선택 (JPG, PNG)
+                <input type="file" id="cloudUploader" accept="image/*" style="display:none;" onchange="uploadToCloudinary(event)">
+            </label>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">🔗 외부 이미지 직링크 URL 추가</span>
             <div class="url-input-container">
                 <input type="text" id="imageUrlInput" class="text-input" placeholder="https://example.com/image.jpg">
                 <button class="action-btn" onclick="addExternalImageUrl()">추가</button>
@@ -296,12 +254,12 @@
         </div>
 
         <div class="setting-item">
-            <span class="setting-label">🖼️ 저장된 배경 목록</span>
+            <span class="setting-label">🖼️ 배경 갤러리</span>
             <div id="galleryGrid" class="gallery-grid"></div>
         </div>
     </div>
 
-    <!-- 메인 대시보드 -->
+    <!-- Main Center Dashboard -->
     <div class="dashboard-container">
         <div class="date-card">
             <span id="js-date">----년 --월 --일</span>
@@ -309,18 +267,17 @@
         </div>
         <div id="js-time" class="time-text">--:--:--</div>
         <div class="weather-card">
-            <div id="js-temp" class="temp-color">🌡️ --°C</div>
+            <div id="js-temp" class="temp-color">☀️ --°C</div>
             <div class="divider"></div>
             <div id="js-hum" class="hum-color">💧 --%</div>
         </div>
-        <div class="quote-card">
+        <div id="quoteCard" class="quote-card">
             <div id="js-quote-text" class="quote-text">“삶이 있는 한 희망은 있다.”</div>
             <div id="js-quote-author" class="quote-author">- 키케로 -</div>
         </div>
     </div>
 
     <script>
-        // 1. 실시간 시계 & D-day
         function updateClock() {
             const now = new Date();
             const year = now.getFullYear();
@@ -347,19 +304,45 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        // 2. Open-Meteo 날씨 정보
         async function fetchWeather() {
             try {
-                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m,relative_humidity_2m&timezone=Asia%2FSeoul");
+                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia%2FSeoul");
                 const data = await res.json();
-                document.getElementById('js-temp').innerText = `🌡️ ${data.current.temperature_2m}°C`;
+                const code = data.current.weather_code;
+                let icon = "☀️";
+                if (code >= 1 && code <= 3) icon = "⛅";
+                else if (code >= 45 && code <= 48) icon = "🌫️";
+                else if (code >= 51 && code <= 67) icon = "🌧️";
+                else if (code >= 71 && code <= 77) icon = "❄️";
+                else if (code >= 80) icon = "🌦️";
+
+                document.getElementById('js-temp').innerText = `${icon} ${data.current.temperature_2m}°C`;
                 document.getElementById('js-hum').innerText = `💧 ${data.current.relative_humidity_2m}%`;
             } catch(e) {}
         }
         fetchWeather();
         setInterval(fetchWeather, 300000);
 
-        // 3. 배경 이미지 갤러리 및 기본 고화질 Unsplash 프리셋 설정
+        const QUOTES = [
+            { quote: "삶이 있는 한 희망은 있다.", author: "키케로" },
+            { quote: "오늘 할 수 있는 일에 전력을 다하라.", author: "괴테" },
+            { quote: "행복은 습관이다. 그것을 몸에 익혀라.", author: "허버드" },
+            { quote: "어제는 역사이고, 내일은 미스터리이며, 오늘은 선물이다.", author: "엘리너 루스벨트" },
+            { quote: "작은 기회로부터 위대한 업적이 시작된다.", author: "데모스테네스" }
+        ];
+        let quoteIndex = 0;
+        function rotateQuotes() {
+            const card = document.getElementById('quoteCard');
+            card.style.opacity = '0';
+            setTimeout(() => {
+                quoteIndex = (quoteIndex + 1) % QUOTES.length;
+                document.getElementById('js-quote-text').innerText = `“${QUOTES[quoteIndex].quote}”`;
+                document.getElementById('js-quote-author').innerText = `- ${QUOTES[quoteIndex].author} -`;
+                card.style.opacity = '1';
+            }, 500);
+        }
+        setInterval(rotateQuotes, 12000);
+
         const DEFAULT_PRESETS = [
             "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
             "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80",
@@ -368,44 +351,100 @@
 
         let galleryImages = JSON.parse(localStorage.getItem('smart_clock_bgs')) || DEFAULT_PRESETS;
         let selectedBgIndex = parseInt(localStorage.getItem('smart_clock_bg_idx') || '0');
+        let slideshowTimer = null;
 
-        function toggleSettingsPanel() {
-            document.getElementById('settings-panel').classList.toggle('open');
+        function toggleSettingsPanel() { document.getElementById('settings-panel').classList.toggle('open'); }
+        function changeBrightness(val) { document.getElementById('bg-container').style.filter = `brightness(${val / 100})`; }
+
+        function saveCloudConfig() {
+            localStorage.setItem('cloud_name', document.getElementById('cloudNameInput').value.trim());
+            localStorage.setItem('upload_preset', document.getElementById('uploadPresetInput').value.trim());
         }
 
-        function changeBrightness(val) {
-            document.getElementById('bg-container').style.filter = `brightness(${val / 100})`;
+        function loadCloudConfig() {
+            document.getElementById('cloudNameInput').value = localStorage.getItem('cloud_name') || '';
+            document.getElementById('uploadPresetInput').value = localStorage.getItem('upload_preset') || '';
+        }
+        loadCloudConfig();
+
+        async function uploadToCloudinary(e) {
+            const file = e.target.files[0];
+            const cloudName = localStorage.getItem('cloud_name');
+            const uploadPreset = localStorage.getItem('upload_preset');
+
+            if (!file) return;
+            if (!cloudName || !uploadPreset) {
+                alert("Cloudinary 스토리지 설정을 먼저 입력해 주세요!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', uploadPreset);
+
+            try {
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                    method: 'POST', body: formData
+                });
+                const data = await res.json();
+                if (data.secure_url) {
+                    galleryImages.unshift(data.secure_url);
+                    selectedBgIndex = 0;
+                    saveGalleryState(); renderGallery();
+                    alert("클라우드에 업로드 완료!");
+                } else { alert("업로드 실패: 설정을 확인해 보세요."); }
+            } catch(err) { alert("클라우드 통신 에러가 발생했습니다."); }
         }
 
         function addExternalImageUrl() {
             const input = document.getElementById('imageUrlInput');
             const url = input.value.trim();
             if (!url) return;
-
             galleryImages.unshift(url);
             selectedBgIndex = 0;
             input.value = '';
-            saveGalleryState();
-            renderGallery();
+            saveGalleryState(); renderGallery();
         }
 
-        function selectBg(index) {
-            selectedBgIndex = index;
-            saveGalleryState();
-            renderGallery();
+        function downloadImage(e, url) {
+            e.stopPropagation();
+            const a = document.createElement('a');
+            a.href = url; a.target = '_blank';
+            a.download = 'background.jpg';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
+        function nextBg() {
+            if (galleryImages.length === 0) return;
+            selectedBgIndex = (selectedBgIndex + 1) % galleryImages.length;
+            saveGalleryState(); renderGallery();
+        }
+
+        function prevBg() {
+            if (galleryImages.length === 0) return;
+            selectedBgIndex = (selectedBgIndex - 1 + galleryImages.length) % galleryImages.length;
+            saveGalleryState(); renderGallery();
+        }
+
+        function selectBg(index) { selectedBgIndex = index; saveGalleryState(); renderGallery(); }
         function deleteBg(e, index) {
             e.stopPropagation();
             galleryImages.splice(index, 1);
             if (selectedBgIndex >= galleryImages.length) selectedBgIndex = galleryImages.length - 1;
-            saveGalleryState();
-            renderGallery();
+            saveGalleryState(); renderGallery();
         }
 
         function saveGalleryState() {
             localStorage.setItem('smart_clock_bgs', JSON.stringify(galleryImages));
             localStorage.setItem('smart_clock_bg_idx', selectedBgIndex);
+        }
+
+        function changeSlideshowInterval(ms) {
+            if (slideshowTimer) clearInterval(slideshowTimer);
+            const interval = parseInt(ms);
+            if (interval > 0) {
+                slideshowTimer = setInterval(() => { nextBg(); }, interval);
+            }
         }
 
         function renderGallery() {
@@ -426,14 +465,45 @@
                 card.onclick = () => selectBg(idx);
 
                 card.innerHTML = `
-                    <button class="gallery-del-btn" onclick="deleteBg(event, ${idx})">✕</button>
+                    <div class="card-btn-group">
+                        <button class="gallery-btn" onclick="downloadImage(event, '${imgSrc}')">💾</button>
+                        <button class="gallery-btn" onclick="deleteBg(event, ${idx})">✕</button>
+                    </div>
                 `;
                 grid.appendChild(card);
             });
         }
         renderGallery();
 
-        // 4. 오디오 & 라디오 연동
+        let startY = 0;
+        window.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', (e) => {
+            const endY = e.changedTouches[0].clientY;
+            const diffY = startY - endY;
+
+            if (document.getElementById('settings-panel').classList.contains('open')) return;
+
+            if (Math.abs(diffY) > 50) {
+                if (diffY > 0) nextBg();
+                else prevBg();
+            }
+        }, { passive: true });
+
+        let wheelThrottle = false;
+        window.addEventListener('wheel', (e) => {
+            if (document.getElementById('settings-panel').classList.contains('open')) return;
+            if (wheelThrottle) return;
+
+            wheelThrottle = true;
+            if (e.deltaY > 0) nextBg();
+            else prevBg();
+
+            setTimeout(() => { wheelThrottle = false; }, 600);
+        });
+
         const mainAudio = document.getElementById('mainAudio');
         let currentType = 'none';
         let hlsPlayer = null;
@@ -443,21 +513,28 @@
         const RENDER_BACKEND_URL = "https://naeun-radio.onrender.com";
 
         async function getRadioStreamUrl(type) {
-            if (type === 'bbcKids') return "http://as-hls-ww-live.akamaized.net/pool_26340777/live/ww/bbc_afrique_radio/bbc_afrique_radio.isml/bbc_afrique_radio-audio%3d320000.norewind.m3u8";
-            if (type === 'disney') return "https://stream.klassikradio.de/lounge/mp3-128/stream.klassikradio.de/";
+            if (type === 'bbcKids') return "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service";
+            if (type === 'disney') return "https://stream.klassikradio.de/disney/mp3-128/stream.klassikradio.de/";
             
-            if (type === 'mbc' || type === 'kbs') {
-                const chCode = (type === 'mbc') ? 'mbc_fm' : 'kbs_classic';
+            const channelMap = {
+                mbc: 'mbc_fm',
+                kbs: 'kbs_classic',
+                kbsCool: 'kbs_cool',
+                sbsPower: 'sbs_power'
+            };
+
+            if (channelMap[type]) {
                 try {
-                    const res = await fetch(`${RENDER_BACKEND_URL}/api/get_stream_url?ch=${chCode}`);
+                    const res = await fetch(`${RENDER_BACKEND_URL}/api/get_stream_url?ch=${channelMap[type]}`);
                     if (res.ok) {
                         const data = await res.json();
                         if (data.status === 'success' && data.url) return data.url;
                     }
                 } catch(e) {}
-                
+
                 if (type === 'mbc') return "https://sf.cdn.imbc.com/sf/sf_sfm/_definst_/sf_sfm.stream/playlist.m3u8";
                 if (type === 'kbs') return "https://kbsfmchannel.kbs.co.kr/hls/live/2004245/1fm/master.m3u8";
+                if (type === 'kbsCool') return "https://kbsfmchannel.kbs.co.kr/hls/live/2004246/2fm/master.m3u8";
             }
             return "";
         }
@@ -550,7 +627,7 @@
         }
 
         function updateBtnUI() {
-            ['feedNoise', 'sleepNoise', 'bbcKids', 'disney', 'mbc', 'kbs'].forEach(id => {
+            ['feedNoise', 'sleepNoise', 'mbc', 'kbs', 'bbcKids', 'disney', 'sbsPower', 'kbsCool'].forEach(id => {
                 const btn = document.getElementById(id + 'Btn');
                 if (btn) btn.classList.remove('radio-active');
             });
