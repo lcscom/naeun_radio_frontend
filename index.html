@@ -14,6 +14,7 @@
             --accent-blue: #81d4fa;
             --accent-green: #00e676;
             --clock-font: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            --dashboard-scale: 1;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,7 +27,7 @@
             touch-action: none;
         }
 
-        /* GPU 가속 레이어 배치 */
+        /* GPU 가속 레이어 */
         #bg-container {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
             background-size: cover; background-position: center; background-repeat: no-repeat;
@@ -137,6 +138,12 @@
             font-size: 12px; color: #e2e8f0; background: rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: 8px;
         }
 
+        .location-info-box {
+            background: rgba(129, 212, 250, 0.1); border: 1px solid rgba(129, 212, 250, 0.25);
+            border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #f1f5f9;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+
         .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 4px; }
         .gallery-card {
             position: relative; height: 85px; border-radius: 10px; overflow: hidden;
@@ -153,16 +160,21 @@
             display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
         }
 
+        /* 대시보드 뷰포트 레이아웃 및 0%~300% 스케일링 */
         .dashboard-container {
             position: relative; z-index: 2; display: flex; flex-direction: column;
             justify-content: center; align-items: center; height: 100vh; width: 100vw;
             text-align: center; gap: clamp(10px, 2.2vh, 22px); padding: 10px 40px;
-            pointer-events: none; transition: all 0.5s ease-in-out;
+            pointer-events: none; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease-in-out;
+            transform: scale(var(--dashboard-scale));
+            transform-origin: center center;
+            will-change: transform, opacity;
         }
 
         .dashboard-container.align-left {
             align-items: flex-start !important;
             text-align: left !important;
+            transform-origin: left center !important;
         }
 
         .dashboard-container.hidden-dashboard { opacity: 0 !important; pointer-events: none !important; }
@@ -236,6 +248,22 @@
         </div>
 
         <div class="setting-item">
+            <span class="setting-label">
+                <span>🔍 대시보드 크기 조절 (0%~300%)</span>
+                <span id="dashboardScaleValueText" style="color: #ffe082;">100%</span>
+            </span>
+            <input type="range" id="dashboardScaleSlider" class="slider-input" min="0" max="300" step="5" value="100" oninput="changeDashboardScale(this.value)">
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">📍 현재 GPS 자동 감지 위치</span>
+            <div class="location-info-box">
+                <span id="detectedLocationText">위치 수신 중...</span>
+                <button class="action-btn" style="padding: 4px 8px; font-size: 11px;" onclick="initGPSLocation()">갱신</button>
+            </div>
+        </div>
+
+        <div class="setting-item">
             <span class="setting-label">🖼️ 디지털 액자 모드</span>
             <label class="toggle-switch-label">
                 <span>중앙 시계 및 정보 숨기기</span>
@@ -258,14 +286,6 @@
                 <option value="serif">클래식 세리프 (Georgia)</option>
                 <option value="mono">네온 모노스페이스 (Courier New)</option>
             </select>
-        </div>
-
-        <div class="setting-item">
-            <span class="setting-label">📍 도시 직접 검색 (영문 도시명)</span>
-            <div class="url-input-container">
-                <input type="text" id="customCityInput" class="text-input" placeholder="예: Tokyo, New York, Jeju">
-                <button class="action-btn" onclick="searchCustomCity()">검색</button>
-            </div>
         </div>
 
         <div class="setting-item">
@@ -408,20 +428,69 @@
             }
         }
 
-        let currentLat = parseFloat(localStorage.getItem('smart_clock_lat') || '37.5665');
-        let currentLon = parseFloat(localStorage.getItem('smart_clock_lon') || '126.9780');
+        let currentLat = 37.5665;
+        let currentLon = 126.9780;
+        let currentAreaName = "서울특별시 (기본)";
 
         let sharedDdayTitle = '나은';
         let sharedDdayDateStr = '2026-07-24';
 
         let userBrightnessVal = parseInt(localStorage.getItem('smart_user_brightness') || '100');
         let userBlurVal = parseInt(localStorage.getItem('smart_user_blur') || '0');
+        let userDashboardScaleVal = parseInt(localStorage.getItem('smart_dashboard_scale') || '100');
         let useNightDimmer = localStorage.getItem('smart_use_night_dimmer') !== 'false';
         let nightStartTime = localStorage.getItem('smart_night_start') || '23:00';
         let nightEndTime = localStorage.getItem('smart_night_end') || '06:00';
 
         let alarmTime = localStorage.getItem('smart_alarm_time') || '';
         let alarmChannel = localStorage.getItem('smart_alarm_channel') || 'mbc';
+
+        function changeDashboardScale(val) {
+            userDashboardScaleVal = parseInt(val);
+            const scaleFactor = userDashboardScaleVal / 100;
+            document.documentElement.style.setProperty('--dashboard-scale', scaleFactor);
+            document.getElementById('dashboardScaleValueText').innerText = `${userDashboardScaleVal}%`;
+            localStorage.setItem('smart_dashboard_scale', userDashboardScaleVal);
+        }
+
+        function initGPSLocation() {
+            const locTextElem = document.getElementById('detectedLocationText');
+            locTextElem.innerText = "GPS 위치 측정 중...";
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        currentLat = position.coords.latitude;
+                        currentLon = position.coords.longitude;
+                        
+                        try {
+                            const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?latitude=${currentLat}&longitude=${currentLon}&count=1&language=ko&format=json`);
+                            const data = await res.json();
+                            if (data.results && data.results.length > 0) {
+                                currentAreaName = data.results[0].name;
+                            } else {
+                                currentAreaName = `위도 ${currentLat.toFixed(2)}, 경도 ${currentLon.toFixed(2)}`;
+                            }
+                        } catch(e) {
+                            currentAreaName = `위도 ${currentLat.toFixed(2)}, 경도 ${currentLon.toFixed(2)}`;
+                        }
+
+                        locTextElem.innerText = currentAreaName;
+                        fetchWeather();
+                    },
+                    (error) => {
+                        currentAreaName = "서울특별시 (기본 설정)";
+                        locTextElem.innerText = currentAreaName;
+                        fetchWeather();
+                    },
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                );
+            } else {
+                currentAreaName = "서울특별시 (GPS 미지원)";
+                locTextElem.innerText = currentAreaName;
+                fetchWeather();
+            }
+        }
 
         async function fetchSharedDday() {
             try {
@@ -490,30 +559,6 @@
             };
             document.documentElement.style.setProperty('--clock-font', fontMap[fontKey] || fontMap.modern);
             localStorage.setItem('smart_clock_font', fontKey);
-        }
-
-        async function searchCustomCity() {
-            const cityName = document.getElementById('customCityInput').value.trim();
-            if (!cityName) return alert("검색할 도시명을 입력해 주세요!");
-
-            try {
-                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=ko&format=json`);
-                const data = await res.json();
-
-                if (data.results && data.results.length > 0) {
-                    const result = data.results[0];
-                    currentLat = result.latitude;
-                    currentLon = result.longitude;
-                    localStorage.setItem('smart_clock_lat', currentLat);
-                    localStorage.setItem('smart_clock_lon', currentLon);
-                    fetchWeather();
-                    alert(`📍 [${result.name}] 도시 좌표가 연동되었습니다!`);
-                } else {
-                    alert("도시를 찾을 수 없습니다. 영문 도시명을 정확히 입력해 보세요.");
-                }
-            } catch(e) {
-                alert("도시 위치 정보를 가져오지 못했습니다.");
-            }
         }
 
         function changeBlurEffect(val) {
@@ -639,8 +684,6 @@
                 document.getElementById('js-hum').innerText = `💧 ${data.current.relative_humidity_2m}%`;
             } catch(e) {}
         }
-        fetchWeather();
-        setInterval(fetchWeather, 300000);
 
         // 3. 감성 명언
         const QUOTES = [
@@ -708,6 +751,9 @@
             document.getElementById('showQuoteCheck').checked = isShowQuote;
             toggleQuoteShow(isShowQuote);
 
+            document.getElementById('dashboardScaleSlider').value = userDashboardScaleVal;
+            changeDashboardScale(userDashboardScaleVal);
+
             document.getElementById('brightnessSlider').value = userBrightnessVal;
             document.getElementById('blurSlider').value = userBlurVal;
             document.getElementById('useNightDimmerCheck').checked = useNightDimmer;
@@ -719,6 +765,7 @@
 
             fetchSharedDday();
             fetchSharedPhotoAlbum();
+            initGPSLocation();
         }
 
         // 5. 배경화면 & 갤러리 관리
@@ -911,7 +958,7 @@
             setTimeout(() => { wheelThrottle = false; }, 600);
         });
 
-        // 7. 오디오 엔진 (메모리 해제 및 가비지 컬렉션 클린업 보강)
+        // 7. 오디오 엔진 (메모리 해제 클린업 완료)
         const mainAudio = document.getElementById('mainAudio');
         let currentType = 'none';
         let hlsPlayer = null;
@@ -1030,6 +1077,10 @@
             if (noiseNode) {
                 try { noiseNode.stop(); noiseNode.disconnect(); } catch(e) {}
                 noiseNode = null;
+            }
+            if (audioCtx) {
+                try { audioCtx.close(); } catch(e) {}
+                audioCtx = null;
             }
         }
 
