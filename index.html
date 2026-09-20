@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>스마트 홈 대시보드 & 라디오</title>
+    <!-- HLS.js 오디오 스트리밍 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
-            --bg-glass: rgba(10, 14, 23, 0.65);
-            --border-glass: rgba(255, 255, 255, 0.18);
+            --bg-glass: rgba(10, 14, 23, 0.68);
+            --border-glass: rgba(255, 255, 255, 0.22);
             --accent-yellow: #ffe082;
             --accent-blue: #81d4fa;
             --accent-green: #00e676;
-            --accent-pink: #ff80ab;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,22 +32,23 @@
             filter: brightness(1);
         }
 
+        /* 컨트롤 바 및 상단 버튼 패널 */
         .top-radio-bar {
             position: fixed; top: 12px; right: 12px; z-index: 99999;
             display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
         }
 
         .radio-btn-row {
-            display: flex; gap: 6px; background: rgba(8, 10, 15, 0.7);
+            display: flex; gap: 6px; background: rgba(8, 10, 15, 0.75);
             padding: 4px 6px; border-radius: 16px;
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         }
 
         .radio-icon-btn, .settings-btn {
             background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px; color: #f1f5f9; height: 36px; padding: 0 12px;
             font-size: 12px; font-weight: 700; cursor: pointer;
             display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -61,7 +62,7 @@
         }
 
         .radio-active {
-            background: rgba(0, 230, 118, 0.25) !important;
+            background: rgba(0, 230, 118, 0.28) !important;
             border-color: var(--accent-green) !important;
             color: #ffffff !important;
             box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);
@@ -72,13 +73,14 @@
             border-color: rgba(255, 255, 255, 0.25);
         }
 
+        /* 우측 슬라이딩 설정 패널 */
         #settings-panel {
             position: fixed; top: 0; right: -420px;
             width: 380px; height: 100vh;
-            background: rgba(10, 13, 20, 0.92); backdrop-filter: blur(30px);
+            background: rgba(10, 13, 20, 0.94); backdrop-filter: blur(30px);
             -webkit-backdrop-filter: blur(30px);
             border-left: 1px solid rgba(255, 255, 255, 0.15); z-index: 100000;
-            padding: 24px 20px; display: flex; flex-direction: column; gap: 18px;
+            padding: 24px 20px; display: flex; flex-direction: column; gap: 16px;
             transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1); overflow-y: auto;
             box-shadow: -15px 0 35px rgba(0, 0, 0, 0.6);
             touch-action: pan-y;
@@ -107,7 +109,9 @@
         .action-btn {
             background: var(--accent-blue); border: none; color: #000;
             padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: bold; cursor: pointer;
+            transition: opacity 0.2s;
         }
+        .action-btn:hover { opacity: 0.85; }
 
         .file-upload-label {
             background: rgba(255, 255, 255, 0.08); border: 1px dashed rgba(255, 255, 255, 0.3);
@@ -134,18 +138,18 @@
             display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
         }
 
+        /* 대시보드 센터 레이아웃 */
         .dashboard-container {
             position: relative; z-index: 2; display: flex; flex-direction: column;
             justify-content: center; align-items: center; height: 100vh; width: 100vw;
-            text-align: center; gap: min(2.2vh, 18px); padding: 10px 0;
+            text-align: center; gap: clamp(10px, 2.2vh, 22px); padding: 10px 0;
             pointer-events: none;
         }
 
-        /* Date & D-Day Card */
         .date-card {
-            background: var(--bg-glass); padding: min(1.2vh, 8px) min(3vw, 26px); border-radius: 30px;
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border-glass); font-size: min(3.6vh, 32px); font-weight: 800;
+            background: var(--bg-glass); padding: clamp(6px, 1.2vh, 12px) clamp(18px, 3vw, 32px);
+            border-radius: 30px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass); font-size: clamp(20px, 3.6vh, 34px); font-weight: 800;
             display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
         }
 
@@ -154,45 +158,42 @@
             padding: 3px 14px; border-radius: 16px; border: 1.5px solid rgba(255, 224, 130, 0.5); font-weight: 900;
         }
 
-        /* Digital Clock */
         .time-text {
-            font-size: min(22vh, 19vw); font-weight: 900; line-height: 0.82;
+            font-size: clamp(80px, 22vh, 210px); font-weight: 900; line-height: 0.82;
             font-variant-numeric: tabular-nums; letter-spacing: -3px;
             color: #ffffff !important;
             text-shadow: 0 6px 35px rgba(0, 0, 0, 0.95), 0 0 18px rgba(0, 0, 0, 0.8);
         }
 
-        /* Weather Card */
         .weather-card {
             display: inline-flex; align-items: center; justify-content: center;
-            font-size: min(5.5vh, 48px); font-weight: 900; background: var(--bg-glass);
-            padding: min(1.2vh, 8px) min(4vw, 32px); border-radius: 40px; backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border-glass); gap: 20px;
+            font-size: clamp(28px, 5.5vh, 52px); font-weight: 900; background: var(--bg-glass);
+            padding: clamp(6px, 1.2vh, 12px) clamp(20px, 4vw, 36px); border-radius: 40px;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass); gap: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
         }
 
-        .divider { width: 3px; height: min(3.5vh, 30px); background-color: rgba(255, 255, 255, 0.25); border-radius: 2px; }
+        .divider { width: 3px; height: clamp(20px, 3.5vh, 32px); background-color: rgba(255, 255, 255, 0.25); border-radius: 2px; }
         .temp-color { color: var(--accent-yellow); }
         .hum-color { color: var(--accent-blue); }
 
-        /* Quote Card */
         .quote-card {
-            background: var(--bg-glass); padding: min(1.4vh, 10px) min(3vw, 28px); border-radius: 20px;
+            background: var(--bg-glass); padding: clamp(8px, 1.4vh, 14px) clamp(18px, 3vw, 30px); border-radius: 20px;
             backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border-glass); max-width: 80%;
+            border: 1px solid var(--border-glass); max-width: 82%;
             transition: opacity 0.5s ease-in-out;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
         }
 
-        .quote-text { font-size: min(3vh, 24px); font-weight: 700; color: #ffffff; word-break: keep-all; }
-        .quote-author { font-size: min(2vh, 15px); font-weight: 500; color: #cbd5e1; margin-top: 2px; }
+        .quote-text { font-size: clamp(16px, 3vh, 26px); font-weight: 700; color: #ffffff; word-break: keep-all; }
+        .quote-author { font-size: clamp(12px, 2vh, 16px); font-weight: 500; color: #cbd5e1; margin-top: 2px; }
     </style>
 </head>
 <body>
     <div id="bg-container"></div>
     <audio id="mainAudio" preload="none" crossorigin="anonymous"></audio>
 
-    <!-- Top Radio Control Bar -->
     <div class="top-radio-bar">
         <div class="radio-btn-row">
             <button id="feedNoiseBtn" class="radio-icon-btn" onclick="toggleRadio('feedNoise')"><span>🍼</span><span>수유소음</span></button>
@@ -209,7 +210,7 @@
         </div>
     </div>
 
-    <!-- Settings Slide Panel -->
+    <!-- 우측 설정 패널 -->
     <div id="settings-panel">
         <div class="panel-header">
             <h3>⚙️ 대시보드 & 스토리지</h3>
@@ -232,8 +233,16 @@
         </div>
 
         <div class="setting-item">
+            <span class="setting-label">🖼️ 구글 포토 앨범 자동 가져오기</span>
+            <div class="url-input-container">
+                <input type="text" id="googlePhotoUrlInput" class="text-input" placeholder="https://photos.app.goo.gl/...">
+                <button class="action-btn" onclick="fetchGooglePhotoAlbum()">가져오기</button>
+            </div>
+        </div>
+
+        <div class="setting-item">
             <span class="setting-label">☁️ Cloudinary 클라우드 설정</span>
-            <input type="text" id="cloudNameInput" class="text-input" placeholder="Cloud Name (예: demo)" onchange="saveCloudConfig()">
+            <input type="text" id="cloudNameInput" class="text-input" placeholder="Cloud Name" onchange="saveCloudConfig()">
             <input type="text" id="uploadPresetInput" class="text-input" placeholder="Unsigned Upload Preset" onchange="saveCloudConfig()">
         </div>
 
@@ -259,7 +268,6 @@
         </div>
     </div>
 
-    <!-- Main Center Dashboard -->
     <div class="dashboard-container">
         <div class="date-card">
             <span id="js-date">----년 --월 --일</span>
@@ -278,6 +286,7 @@
     </div>
 
     <script>
+        // 1. 실시간 시계 & D-Day
         function updateClock() {
             const now = new Date();
             const year = now.getFullYear();
@@ -304,6 +313,7 @@
         updateClock();
         setInterval(updateClock, 1000);
 
+        // 2. Open-Meteo 상세 날씨 정보
         async function fetchWeather() {
             try {
                 const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia%2FSeoul");
@@ -323,6 +333,7 @@
         fetchWeather();
         setInterval(fetchWeather, 300000);
 
+        // 3. 감성 명언
         const QUOTES = [
             { quote: "삶이 있는 한 희망은 있다.", author: "키케로" },
             { quote: "오늘 할 수 있는 일에 전력을 다하라.", author: "괴테" },
@@ -343,6 +354,7 @@
         }
         setInterval(rotateQuotes, 12000);
 
+        // 4. 배경화면 & 갤러리 관리
         const DEFAULT_PRESETS = [
             "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
             "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80",
@@ -367,16 +379,46 @@
         }
         loadCloudConfig();
 
+        // [프론트 단독] 구글 포토 앨범 프록시 파서
+        async function fetchGooglePhotoAlbum() {
+            const input = document.getElementById('googlePhotoUrlInput');
+            const albumUrl = input.value.trim();
+            if (!albumUrl) return alert("구글 포토 공유 앨범 링크를 입력해 주세요!");
+
+            try {
+                // 오픈 CORS 프록시 서비스 활용
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(albumUrl)}`;
+                const res = await fetch(proxyUrl);
+                const data = await res.json();
+
+                if (data.contents) {
+                    const regex = /(https:\/\/lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9\-_]+)=w/g;
+                    const matches = [...data.contents.matchAll(regex)];
+                    const imageUrls = Array.from(new Set(matches.map(m => `${m[1]}=w1920-h1080-no`)));
+
+                    if (imageUrls.length > 0) {
+                        galleryImages = [...imageUrls, ...galleryImages];
+                        selectedBgIndex = 0;
+                        input.value = '';
+                        saveGalleryState();
+                        renderGallery();
+                        alert(`구글 포토 앨범에서 ${imageUrls.length}개의 사진을 성공적으로 가져왔습니다!`);
+                    } else {
+                        alert("앨범 내에서 이미지를 찾을 수 없습니다. 앨범이 공개로 설정되었는지 확인하세요.");
+                    }
+                }
+            } catch(e) {
+                alert("구글 포토 앨범 정보를 불러오는 도중 오류가 발생했습니다.");
+            }
+        }
+
         async function uploadToCloudinary(e) {
             const file = e.target.files[0];
             const cloudName = localStorage.getItem('cloud_name');
             const uploadPreset = localStorage.getItem('upload_preset');
 
             if (!file) return;
-            if (!cloudName || !uploadPreset) {
-                alert("Cloudinary 스토리지 설정을 먼저 입력해 주세요!");
-                return;
-            }
+            if (!cloudName || !uploadPreset) return alert("Cloudinary 설정을 먼저 입력해 주세요!");
 
             const formData = new FormData();
             formData.append('file', file);
@@ -475,11 +517,9 @@
         }
         renderGallery();
 
+        // 5. 제스처 스와이프
         let startY = 0;
-        window.addEventListener('touchstart', (e) => {
-            startY = e.touches[0].clientY;
-        }, { passive: true });
-
+        window.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; }, { passive: true });
         window.addEventListener('touchend', (e) => {
             const endY = e.changedTouches[0].clientY;
             const diffY = startY - endY;
@@ -504,61 +544,50 @@
             setTimeout(() => { wheelThrottle = false; }, 600);
         });
 
+        // 6. 독립 가동 오디오 & 라디오 엔진 (백엔드 미의존)
         const mainAudio = document.getElementById('mainAudio');
         let currentType = 'none';
         let hlsPlayer = null;
         let audioCtx = null;
         let noiseNode = null;
 
-        const RENDER_BACKEND_URL = "https://naeun-radio.onrender.com";
-
-        async function getRadioStreamUrl(type) {
-            if (type === 'bbcKids') return "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service";
-            if (type === 'disney') return "https://stream.klassikradio.de/disney/mp3-128/stream.klassikradio.de/";
-            
-            const channelMap = {
-                mbc: 'mbc_fm',
-                kbs: 'kbs_classic',
-                kbsCool: 'kbs_cool',
-                sbsPower: 'sbs_power'
-            };
-
-            if (channelMap[type]) {
-                try {
-                    const res = await fetch(`${RENDER_BACKEND_URL}/api/get_stream_url?ch=${channelMap[type]}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.status === 'success' && data.url) return data.url;
-                    }
-                } catch(e) {}
-
-                if (type === 'mbc') return "https://sf.cdn.imbc.com/sf/sf_sfm/_definst_/sf_sfm.stream/playlist.m3u8";
-                if (type === 'kbs') return "https://kbsfmchannel.kbs.co.kr/hls/live/2004245/1fm/master.m3u8";
-                if (type === 'kbsCool') return "https://kbsfmchannel.kbs.co.kr/hls/live/2004246/2fm/master.m3u8";
-            }
-            return "";
-        }
+        // 직통 HLS 및 메인 스트림 주소
+        const RADIO_STREAMS = {
+            mbc: "https://sf.cdn.imbc.com/sf/sf_sfm/_definst_/sf_sfm.stream/playlist.m3u8",
+            kbs: "https://kbsfmchannel.kbs.co.kr/hls/live/2004245/1fm/master.m3u8",
+            kbsCool: "https://kbsfmchannel.kbs.co.kr/hls/live/2004246/2fm/master.m3u8",
+            sbsPower: "https://gorealra.sbs.co.kr/gorealra/powerfm.m3u8",
+            bbcKids: "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service",
+            disney: "https://stream.klassikradio.de/disney/mp3-128/stream.klassikradio.de/"
+        };
 
         async function playRadioStream(type) {
             stopSynthesizedNoise();
             if (hlsPlayer) { hlsPlayer.destroy(); hlsPlayer = null; }
 
-            const url = await getRadioStreamUrl(type);
+            const url = RADIO_STREAMS[type];
             if (!url) return;
 
             if (url.includes('.m3u8')) {
                 if (Hls.isSupported()) {
-                    hlsPlayer = new Hls();
+                    hlsPlayer = new Hls({ manifestLoadingTimeOut: 10000, manifestLoadingMaxRetry: 5 });
                     hlsPlayer.loadSource(url);
                     hlsPlayer.attachMedia(mainAudio);
-                    hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => mainAudio.play());
+                    hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => mainAudio.play().catch(e => {}));
+                    hlsPlayer.on(Hls.Events.ERROR, (event, data) => {
+                        if (data.fatal) {
+                            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hlsPlayer.startLoad();
+                            else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hlsPlayer.recoverMediaError();
+                            else stopRadio();
+                        }
+                    });
                 } else if (mainAudio.canPlayType('application/vnd.apple.mpegurl')) {
                     mainAudio.src = url;
-                    mainAudio.play();
+                    mainAudio.play().catch(e => {});
                 }
             } else {
                 mainAudio.src = url;
-                mainAudio.play();
+                mainAudio.play().catch(e => {});
             }
 
             currentType = type;
