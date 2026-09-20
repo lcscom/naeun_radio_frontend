@@ -13,6 +13,7 @@
             --accent-yellow: #ffe082;
             --accent-blue: #81d4fa;
             --accent-green: #00e676;
+            --clock-font: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,55 +26,65 @@
             touch-action: none;
         }
 
+        /* GPU 가속 레이어 배치 */
         #bg-container {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
             background-size: cover; background-position: center; background-repeat: no-repeat;
             z-index: 1; transition: filter 0.4s ease, background-image 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            filter: brightness(1);
+            filter: brightness(1) blur(0px);
+            transform: translateZ(0);
+            will-change: filter, background-image;
         }
 
-        /* 상단 라디오 컨트롤 바 */
+        /* 1줄 반투명 컨트롤 바 */
         .top-radio-bar {
-            position: fixed; top: 12px; right: 12px; z-index: 99999;
-            display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+            position: fixed; top: 10px; right: 10px; left: 10px; z-index: 99999;
+            display: flex; justify-content: flex-end; align-items: center;
+            pointer-events: none;
         }
 
         .radio-btn-row {
-            display: flex; gap: 6px; background: rgba(8, 10, 15, 0.75);
-            padding: 4px 6px; border-radius: 16px;
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            display: flex; flex-wrap: nowrap; gap: clamp(2px, 0.4vw, 6px);
+            background: rgba(0, 0, 0, 0.45);
+            padding: clamp(3px, 0.6vh, 6px); border-radius: 16px;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            max-width: 100%; overflow: hidden;
+            pointer-events: auto;
         }
 
         .radio-icon-btn, .settings-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 12px; color: #f1f5f9; height: 36px; padding: 0 12px;
-            font-size: 12px; font-weight: 700; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px; color: rgba(255, 255, 255, 0.85);
+            height: clamp(28px, 4vh, 36px);
+            padding: 0 clamp(4px, 0.8vw, 10px);
+            font-size: clamp(9px, 1.1vw, 12px); font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            gap: clamp(2px, 0.3vw, 5px); white-space: nowrap; flex-shrink: 1;
+            transition: all 0.2s ease;
         }
 
+        .radio-icon-btn span:first-child { font-size: clamp(10px, 1.2vw, 14px); }
+
         .radio-icon-btn:hover, .settings-btn:hover {
-            background: rgba(255, 255, 255, 0.22);
-            border-color: rgba(255, 255, 255, 0.3);
-            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
         }
 
         .radio-active {
-            background: rgba(0, 230, 118, 0.28) !important;
+            background: rgba(0, 230, 118, 0.35) !important;
             border-color: var(--accent-green) !important;
             color: #ffffff !important;
-            box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);
+            box-shadow: 0 0 12px rgba(0, 230, 118, 0.5);
         }
 
         .settings-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(20, 25, 35, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
-        /* 우측 슬라이딩 설정 패널 */
         #settings-panel {
             position: fixed; top: 0; right: -420px;
             width: 380px; height: 100vh;
@@ -99,12 +110,13 @@
         .slider-input { width: 100%; cursor: pointer; accent-color: var(--accent-blue); }
         .url-input-container { display: flex; gap: 6px; }
         
-        .text-input {
+        .text-input, .select-input {
             flex: 1; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px; padding: 8px 12px; color: #fff; font-size: 12px; outline: none;
             transition: border-color 0.2s;
         }
-        .text-input:focus { border-color: var(--accent-blue); }
+        .text-input:focus, .select-input:focus { border-color: var(--accent-blue); }
+        .select-input option { background: #111420; color: #fff; }
 
         .action-btn {
             background: var(--accent-blue); border: none; color: #000;
@@ -120,6 +132,11 @@
         }
         .file-upload-label:hover { background: rgba(255, 255, 255, 0.15); }
 
+        .toggle-switch-label {
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+            font-size: 12px; color: #e2e8f0; background: rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: 8px;
+        }
+
         .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 4px; }
         .gallery-card {
             position: relative; height: 85px; border-radius: 10px; overflow: hidden;
@@ -129,22 +146,26 @@
         .gallery-card:hover { transform: scale(1.02); }
         .gallery-card.selected { border-color: var(--accent-yellow); box-shadow: 0 0 12px rgba(255, 224, 130, 0.5); }
         
-        .card-btn-group {
-            position: absolute; top: 4px; right: 4px; display: flex; gap: 4px;
-        }
+        .card-btn-group { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; }
         .gallery-btn {
             background: rgba(0, 0, 0, 0.75); border: none; color: white;
             width: 24px; height: 24px; border-radius: 50%; font-size: 11px; cursor: pointer;
             display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
         }
 
-        /* 대시보드 메인 레이아웃 */
         .dashboard-container {
             position: relative; z-index: 2; display: flex; flex-direction: column;
             justify-content: center; align-items: center; height: 100vh; width: 100vw;
-            text-align: center; gap: clamp(10px, 2.2vh, 22px); padding: 10px 0;
-            pointer-events: none;
+            text-align: center; gap: clamp(10px, 2.2vh, 22px); padding: 10px 40px;
+            pointer-events: none; transition: all 0.5s ease-in-out;
         }
+
+        .dashboard-container.align-left {
+            align-items: flex-start !important;
+            text-align: left !important;
+        }
+
+        .dashboard-container.hidden-dashboard { opacity: 0 !important; pointer-events: none !important; }
 
         .date-card {
             background: var(--bg-glass); padding: clamp(6px, 1.2vh, 12px) clamp(18px, 3vw, 32px);
@@ -159,9 +180,9 @@
         }
 
         .time-text {
+            font-family: var(--clock-font);
             font-size: clamp(80px, 22vh, 210px); font-weight: 900; line-height: 0.82;
-            font-variant-numeric: tabular-nums; letter-spacing: -3px;
-            color: #ffffff !important;
+            font-variant-numeric: tabular-nums; letter-spacing: -3px; color: #ffffff !important;
             text-shadow: 0 6px 35px rgba(0, 0, 0, 0.95), 0 0 18px rgba(0, 0, 0, 0.8);
         }
 
@@ -182,10 +203,10 @@
             background: var(--bg-glass); padding: clamp(8px, 1.4vh, 14px) clamp(18px, 3vw, 30px); border-radius: 20px;
             backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border-glass); max-width: 82%;
-            transition: opacity 0.5s ease-in-out;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            transition: opacity 0.5s ease-in-out; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
         }
 
+        .quote-card.hidden-quote { display: none !important; }
         .quote-text { font-size: clamp(16px, 3vh, 26px); font-weight: 700; color: #ffffff; word-break: keep-all; }
         .quote-author { font-size: clamp(12px, 2vh, 16px); font-weight: 500; color: #cbd5e1; margin-top: 2px; }
     </style>
@@ -200,17 +221,14 @@
             <button id="sleepNoiseBtn" class="radio-icon-btn" onclick="toggleRadio('sleepNoise')"><span>🌙</span><span>수면소음</span></button>
             <button id="mbcBtn" class="radio-icon-btn" onclick="toggleRadio('mbc')"><span>📻</span><span>MBC 95.9</span></button>
             <button id="kbsBtn" class="radio-icon-btn" onclick="toggleRadio('kbs')"><span>🎻</span><span>KBS 클래식</span></button>
-            <button class="settings-btn" onclick="toggleSettingsPanel()">⚙️ 설정</button>
-        </div>
-        <div class="radio-btn-row">
             <button id="bbcKidsBtn" class="radio-icon-btn" onclick="toggleRadio('bbcKids')"><span>🇬🇧</span><span>BBC World</span></button>
             <button id="disneyBtn" class="radio-icon-btn" onclick="toggleRadio('disney')"><span>🏰</span><span>디즈니 OST</span></button>
             <button id="sbsPowerBtn" class="radio-icon-btn" onclick="toggleRadio('sbsPower')"><span>📻</span><span>SBS 107.7</span></button>
             <button id="kbsCoolBtn" class="radio-icon-btn" onclick="toggleRadio('kbsCool')"><span>🎧</span><span>KBS 89.1</span></button>
+            <button class="settings-btn" onclick="toggleSettingsPanel()">⚙️ 설정</button>
         </div>
     </div>
 
-    <!-- 우측 설정 패널 -->
     <div id="settings-panel">
         <div class="panel-header">
             <h3>⚙️ 대시보드 & 스토리지</h3>
@@ -218,13 +236,107 @@
         </div>
 
         <div class="setting-item">
-            <span class="setting-label">💡 화면 밝기 조절</span>
+            <span class="setting-label">🖼️ 디지털 액자 모드</span>
+            <label class="toggle-switch-label">
+                <span>중앙 시계 및 정보 숨기기</span>
+                <input type="checkbox" id="hideDashboardCheck" onchange="toggleDashboardHide(this.checked)">
+            </label>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">📐 대시보드 화면 정렬</span>
+            <select id="layoutAlignSelect" class="select-input" onchange="changeLayoutAlign(this.value)">
+                <option value="center">중앙 정렬 (기본)</option>
+                <option value="left">좌측 정렬</option>
+            </select>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">🔤 디지털 시계 폰트 서체</span>
+            <select id="clockFontSelect" class="select-input" onchange="changeClockFont(this.value)">
+                <option value="modern">볼드 모던 (Pretendard)</option>
+                <option value="serif">클래식 세리프 (Georgia)</option>
+                <option value="mono">네온 모노스페이스 (Courier New)</option>
+            </select>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">📍 도시 직접 검색 (영문 도시명)</span>
+            <div class="url-input-container">
+                <input type="text" id="customCityInput" class="text-input" placeholder="예: Tokyo, New York, Jeju">
+                <button class="action-btn" onclick="searchCustomCity()">검색</button>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">🌫️ 배경 블러(Blur) 가우시안 효과</span>
+            <input type="range" id="blurSlider" class="slider-input" min="0" max="10" value="0" oninput="changeBlurEffect(this.value)">
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">⏰ 라디오 자동 예약 켜기 알람</span>
+            <div class="url-input-container">
+                <input type="time" id="alarmTimeInput" class="text-input">
+                <select id="alarmChannelSelect" class="select-input">
+                    <option value="mbc">MBC 95.9</option>
+                    <option value="kbs">KBS 클래식</option>
+                    <option value="kbsCool">KBS 89.1</option>
+                    <option value="sbsPower">SBS 107.7</option>
+                </select>
+                <button class="action-btn" onclick="saveRadioAlarm()">예약</button>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">🌙 야간 자동 어둡기 (밝기 10% 축소)</span>
+            <label class="toggle-switch-label" style="margin-bottom: 6px;">
+                <span>야간 어둡기 타이머 사용</span>
+                <input type="checkbox" id="useNightDimmerCheck" checked onchange="toggleNightDimmerUse(this.checked)">
+            </label>
+            <div class="url-input-container">
+                <input type="time" id="nightStartInput" class="text-input" value="23:00">
+                <span style="align-self: center; font-size: 12px; color: #cbd5e1;">~</span>
+                <input type="time" id="nightEndInput" class="text-input" value="06:00">
+                <button class="action-btn" onclick="saveNightDimmerTimes()">저장</button>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">⏱️ 오디오 자동 수면 타이머</span>
+            <select id="sleepTimerSelect" class="select-input" onchange="setAudioSleepTimer(this.value)">
+                <option value="0">타이머 안함</option>
+                <option value="15">15분 후 꺼짐</option>
+                <option value="30">30분 후 꺼짐</option>
+                <option value="60">60분 후 꺼짐</option>
+                <option value="90">90분 후 꺼짐</option>
+            </select>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">📅 커스텀 D-Day 설정 (모두와 공유)</span>
+            <div class="url-input-container">
+                <input type="text" id="ddayTitleInput" class="text-input" placeholder="타이틀 (예: 나은)">
+                <input type="date" id="ddayDateInput" class="text-input">
+                <button class="action-btn" onclick="saveSharedDdayConfig()">공유 저장</button>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">💬 감성 명언 카드 표시</span>
+            <label class="toggle-switch-label">
+                <span>하단 명언 카드 보기</span>
+                <input type="checkbox" id="showQuoteCheck" checked onchange="toggleQuoteShow(this.checked)">
+            </label>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">💡 수동 화면 밝기 조절</span>
             <input type="range" id="brightnessSlider" class="slider-input" min="10" max="100" value="100" oninput="changeBrightness(this.value)">
         </div>
 
         <div class="setting-item">
             <span class="setting-label">🔄 배경 자동 슬라이드쇼</span>
-            <select id="slideshowSelect" class="text-input" onchange="changeSlideshowInterval(this.value)">
+            <select id="slideshowSelect" class="select-input" onchange="changeSlideshowInterval(this.value)">
                 <option value="0">사용 안함</option>
                 <option value="10000">10초 마다</option>
                 <option value="30000">30초 마다</option>
@@ -233,7 +345,7 @@
         </div>
 
         <div class="setting-item">
-            <span class="setting-label">🖼️ 구글 포토 앨범 가져오기</span>
+            <span class="setting-label">🖼️ 구글 포토 앨범 변경 (모두와 공유)</span>
             <div class="url-input-container">
                 <input type="text" id="googlePhotoUrlInput" class="text-input" placeholder="https://photos.app.goo.gl/...">
                 <button class="action-btn" onclick="fetchGooglePhotoAlbum()">가져오기</button>
@@ -268,7 +380,7 @@
         </div>
     </div>
 
-    <div class="dashboard-container">
+    <div id="dashboardContainer" class="dashboard-container">
         <div class="date-card">
             <span id="js-date">----년 --월 --일</span>
             <span id="js-dday" class="dday-tag">D+--일</span>
@@ -288,6 +400,198 @@
     <script>
         const RENDER_BACKEND_URL = "https://naeun-radio.onrender.com";
 
+        function sendAppMessage(type, payload = {}) {
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type, payload }));
+            } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.appBridge) {
+                window.webkit.messageHandlers.appBridge.postMessage({ type, payload });
+            }
+        }
+
+        let currentLat = parseFloat(localStorage.getItem('smart_clock_lat') || '37.5665');
+        let currentLon = parseFloat(localStorage.getItem('smart_clock_lon') || '126.9780');
+
+        let sharedDdayTitle = '나은';
+        let sharedDdayDateStr = '2026-07-24';
+
+        let userBrightnessVal = parseInt(localStorage.getItem('smart_user_brightness') || '100');
+        let userBlurVal = parseInt(localStorage.getItem('smart_user_blur') || '0');
+        let useNightDimmer = localStorage.getItem('smart_use_night_dimmer') !== 'false';
+        let nightStartTime = localStorage.getItem('smart_night_start') || '23:00';
+        let nightEndTime = localStorage.getItem('smart_night_end') || '06:00';
+
+        let alarmTime = localStorage.getItem('smart_alarm_time') || '';
+        let alarmChannel = localStorage.getItem('smart_alarm_channel') || 'mbc';
+
+        async function fetchSharedDday() {
+            try {
+                const res = await fetch(`${RENDER_BACKEND_URL}/api/dday`);
+                const data = await res.json();
+                if (data.status === 'success' && data.data) {
+                    sharedDdayTitle = data.data.title;
+                    sharedDdayDateStr = data.data.date;
+                    document.getElementById('ddayTitleInput').value = sharedDdayTitle;
+                    document.getElementById('ddayDateInput').value = sharedDdayDateStr;
+                    updateClock();
+                }
+            } catch(e) {}
+        }
+
+        async function fetchSharedPhotoAlbum() {
+            try {
+                const res = await fetch(`${RENDER_BACKEND_URL}/api/shared_photo_album`);
+                const data = await res.json();
+                if (data.status === 'success' && data.data && data.data.images && data.data.images.length > 0) {
+                    document.getElementById('googlePhotoUrlInput').value = data.data.url || '';
+                    galleryImages = data.data.images;
+                    saveGalleryState();
+                    renderGallery();
+                }
+            } catch(e) {}
+        }
+
+        async function saveSharedDdayConfig() {
+            const title = document.getElementById('ddayTitleInput').value.trim();
+            const dateStr = document.getElementById('ddayDateInput').value;
+
+            if (!title || !dateStr) return alert("타이틀과 날짜를 모두 입력해 주세요!");
+
+            try {
+                const res = await fetch(`${RENDER_BACKEND_URL}/api/dday`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, date: dateStr })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    sharedDdayTitle = data.data.title;
+                    sharedDdayDateStr = data.data.date;
+                    updateClock();
+                    sendAppMessage('DDAY_UPDATED', data.data);
+                    alert("🌐 전역 공유 D-Day 설정이 저장되었습니다!");
+                }
+            } catch(e) {
+                alert("백엔드 서버 통신 에러가 발생했습니다.");
+            }
+        }
+
+        function changeLayoutAlign(align) {
+            const container = document.getElementById('dashboardContainer');
+            if (align === 'left') container.classList.add('align-left');
+            else container.classList.remove('align-left');
+            localStorage.setItem('smart_layout_align', align);
+        }
+
+        function changeClockFont(fontKey) {
+            const fontMap = {
+                modern: "'Pretendard', sans-serif",
+                serif: "Georgia, serif",
+                mono: "'Courier New', monospace"
+            };
+            document.documentElement.style.setProperty('--clock-font', fontMap[fontKey] || fontMap.modern);
+            localStorage.setItem('smart_clock_font', fontKey);
+        }
+
+        async function searchCustomCity() {
+            const cityName = document.getElementById('customCityInput').value.trim();
+            if (!cityName) return alert("검색할 도시명을 입력해 주세요!");
+
+            try {
+                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=ko&format=json`);
+                const data = await res.json();
+
+                if (data.results && data.results.length > 0) {
+                    const result = data.results[0];
+                    currentLat = result.latitude;
+                    currentLon = result.longitude;
+                    localStorage.setItem('smart_clock_lat', currentLat);
+                    localStorage.setItem('smart_clock_lon', currentLon);
+                    fetchWeather();
+                    alert(`📍 [${result.name}] 도시 좌표가 연동되었습니다!`);
+                } else {
+                    alert("도시를 찾을 수 없습니다. 영문 도시명을 정확히 입력해 보세요.");
+                }
+            } catch(e) {
+                alert("도시 위치 정보를 가져오지 못했습니다.");
+            }
+        }
+
+        function changeBlurEffect(val) {
+            userBlurVal = parseInt(val);
+            localStorage.setItem('smart_user_blur', userBlurVal);
+            checkNightDimmerAuto();
+        }
+
+        function saveRadioAlarm() {
+            alarmTime = document.getElementById('alarmTimeInput').value;
+            alarmChannel = document.getElementById('alarmChannelSelect').value;
+            localStorage.setItem('smart_alarm_time', alarmTime);
+            localStorage.setItem('smart_alarm_channel', alarmChannel);
+            if (alarmTime) {
+                alert(`⏰ 매일 [${alarmTime}]에 ${alarmChannel.toUpperCase()} 라디오가 자동 실행되도록 예약되었습니다.`);
+            }
+        }
+
+        function checkAlarmRoutine(now) {
+            if (!alarmTime) return;
+            const curTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            if (now.getSeconds() === 0 && curTimeStr === alarmTime) {
+                toggleRadio(alarmChannel);
+            }
+        }
+
+        function checkNightDimmerAuto() {
+            let effBrightness = userBrightnessVal;
+
+            if (useNightDimmer) {
+                const now = new Date();
+                const curMinutes = now.getHours() * 60 + now.getMinutes();
+
+                const [sHour, sMin] = nightStartTime.split(':').map(Number);
+                const startMinutes = sHour * 60 + sMin;
+
+                const [eHour, eMin] = nightEndTime.split(':').map(Number);
+                const endMinutes = eHour * 60 + eMin;
+
+                let isNight = false;
+                if (startMinutes > endMinutes) {
+                    isNight = (curMinutes >= startMinutes || curMinutes < endMinutes);
+                } else {
+                    isNight = (curMinutes >= startMinutes && curMinutes < endMinutes);
+                }
+
+                if (isNight) effBrightness = 10;
+            }
+
+            document.getElementById('bg-container').style.filter = `brightness(${effBrightness / 100}) blur(${userBlurVal}px)`;
+        }
+
+        function changeBrightness(val) {
+            userBrightnessVal = parseInt(val);
+            localStorage.setItem('smart_user_brightness', userBrightnessVal);
+            checkNightDimmerAuto();
+        }
+
+        function toggleNightDimmerUse(use) {
+            useNightDimmer = use;
+            localStorage.setItem('smart_use_night_dimmer', use);
+            checkNightDimmerAuto();
+        }
+
+        function saveNightDimmerTimes() {
+            const startVal = document.getElementById('nightStartInput').value;
+            const endVal = document.getElementById('nightEndInput').value;
+
+            if (startVal && endVal) {
+                nightStartTime = startVal;
+                nightEndTime = endVal;
+                localStorage.setItem('smart_night_start', nightStartTime);
+                localStorage.setItem('smart_night_end', nightEndTime);
+                checkNightDimmerAuto();
+                alert(`🌙 야간 어둡기 시간이 ${nightStartTime} ~ ${nightEndTime} 로 저장되었습니다.`);
+            }
+        }
+
         // 1. 실시간 시계 & D-Day
         function updateClock() {
             const now = new Date();
@@ -298,19 +602,22 @@
             const dayOfWeek = dayNames[now.getDay()];
             document.getElementById('js-date').innerText = `${year}년 ${month}월 ${date}일 (${dayOfWeek})`;
             
-            const birthDate = new Date(2026, 6, 24);
+            const targetDate = new Date(sharedDdayDateStr);
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const diffDays = Math.floor((today - birthDate) / (1000 * 60 * 60 * 24)) + 1;
+            const diffDays = Math.floor((today - targetDate) / (1000 * 60 * 60 * 24)) + 1;
             
             const ddayElem = document.getElementById('js-dday');
-            if (diffDays > 0) ddayElem.innerText = `나은 D+${diffDays}일`;
-            else if (diffDays === 0) ddayElem.innerText = `나은 출생일! 🎉`;
-            else ddayElem.innerText = `나은 D${diffDays}일`;
+            if (diffDays > 0) ddayElem.innerText = `${sharedDdayTitle} D+${diffDays}일`;
+            else if (diffDays === 0) ddayElem.innerText = `${sharedDdayTitle} D-Day! 🎉`;
+            else ddayElem.innerText = `${sharedDdayTitle} D${diffDays}일`;
             
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
             document.getElementById('js-time').innerText = `${hours}:${minutes}:${seconds}`;
+
+            checkNightDimmerAuto();
+            checkAlarmRoutine(now);
         }
         updateClock();
         setInterval(updateClock, 1000);
@@ -318,7 +625,7 @@
         // 2. Open-Meteo 날씨 정보
         async function fetchWeather() {
             try {
-                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia%2FSeoul");
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia%2FSeoul`);
                 const data = await res.json();
                 const code = data.current.weather_code;
                 let icon = "☀️";
@@ -335,7 +642,7 @@
         fetchWeather();
         setInterval(fetchWeather, 300000);
 
-        // 3. 명언
+        // 3. 감성 명언
         const QUOTES = [
             { quote: "삶이 있는 한 희망은 있다.", author: "키케로" },
             { quote: "오늘 할 수 있는 일에 전력을 다하라.", author: "괴테" },
@@ -356,7 +663,65 @@
         }
         setInterval(rotateQuotes, 12000);
 
-        // 4. 배경화면 & 갤러리 관리
+        // 4. 기능 제어 로직
+        function toggleDashboardHide(isHidden) {
+            const container = document.getElementById('dashboardContainer');
+            if (isHidden) container.classList.add('hidden-dashboard');
+            else container.classList.remove('hidden-dashboard');
+            localStorage.setItem('smart_hide_dashboard', isHidden);
+            sendAppMessage('DASHBOARD_TOGGLE', { isHidden });
+        }
+
+        let sleepTimerTimeout = null;
+        function setAudioSleepTimer(minutesStr) {
+            if (sleepTimerTimeout) clearTimeout(sleepTimerTimeout);
+            const minutes = parseInt(minutesStr);
+            if (minutes > 0) {
+                sleepTimerTimeout = setTimeout(() => {
+                    stopRadio();
+                    alert(`⏱️ 수면 타이머(${minutes}분)가 완료되어 오디오를 정지했습니다.`);
+                }, minutes * 60 * 1000);
+            }
+        }
+
+        function toggleQuoteShow(isShow) {
+            const card = document.getElementById('quoteCard');
+            if (isShow) card.classList.remove('hidden-quote');
+            else card.classList.add('hidden-quote');
+            localStorage.setItem('smart_show_quote', isShow);
+        }
+
+        function loadSettingsUI() {
+            const isHideDash = localStorage.getItem('smart_hide_dashboard') === 'true';
+            document.getElementById('hideDashboardCheck').checked = isHideDash;
+            toggleDashboardHide(isHideDash);
+
+            const alignVal = localStorage.getItem('smart_layout_align') || 'center';
+            document.getElementById('layoutAlignSelect').value = alignVal;
+            changeLayoutAlign(alignVal);
+
+            const fontVal = localStorage.getItem('smart_clock_font') || 'modern';
+            document.getElementById('clockFontSelect').value = fontVal;
+            changeClockFont(fontVal);
+
+            const isShowQuote = localStorage.getItem('smart_show_quote') !== 'false';
+            document.getElementById('showQuoteCheck').checked = isShowQuote;
+            toggleQuoteShow(isShowQuote);
+
+            document.getElementById('brightnessSlider').value = userBrightnessVal;
+            document.getElementById('blurSlider').value = userBlurVal;
+            document.getElementById('useNightDimmerCheck').checked = useNightDimmer;
+            document.getElementById('nightStartInput').value = nightStartTime;
+            document.getElementById('nightEndInput').value = nightEndTime;
+
+            document.getElementById('alarmTimeInput').value = alarmTime;
+            document.getElementById('alarmChannelSelect').value = alarmChannel;
+
+            fetchSharedDday();
+            fetchSharedPhotoAlbum();
+        }
+
+        // 5. 배경화면 & 갤러리 관리
         const DEFAULT_PRESETS = [
             "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
             "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80",
@@ -368,7 +733,6 @@
         let slideshowTimer = null;
 
         function toggleSettingsPanel() { document.getElementById('settings-panel').classList.toggle('open'); }
-        function changeBrightness(val) { document.getElementById('bg-container').style.filter = `brightness(${val / 100})`; }
 
         function saveCloudConfig() {
             localStorage.setItem('cloud_name', document.getElementById('cloudNameInput').value.trim());
@@ -379,9 +743,7 @@
             document.getElementById('cloudNameInput').value = localStorage.getItem('cloud_name') || '';
             document.getElementById('uploadPresetInput').value = localStorage.getItem('upload_preset') || '';
         }
-        loadCloudConfig();
 
-        // [구글 포토 연동 실행]
         async function fetchGooglePhotoAlbum() {
             const input = document.getElementById('googlePhotoUrlInput');
             const albumUrl = input.value.trim();
@@ -392,17 +754,16 @@
                 const data = await res.json();
 
                 if (data.status === 'success' && data.images && data.images.length > 0) {
-                    galleryImages = [...data.images, ...galleryImages];
+                    galleryImages = data.images;
                     selectedBgIndex = 0;
-                    input.value = '';
                     saveGalleryState();
                     renderGallery();
-                    alert(`🎉 구글 포토 앨범에서 ${data.images.length}개의 사진을 성공적으로 가져왔습니다!`);
+                    alert(`🌐 구글 포토 앨범(${data.images.length}장)이 서버에 변경 등록되었습니다! (모든 접속자에게 반영됩니다)`);
                 } else {
-                    alert(data.message || "구글 포토 사진을 가져올 수 없습니다.");
+                    alert(data.message || "사진을 수집할 수 없습니다.");
                 }
             } catch(e) {
-                alert("Render.com 백엔드 통신 에러가 발생했습니다. 백엔드 가동 상태를 확인해 주세요.");
+                alert("백엔드 서버 통신 에러가 발생했습니다.");
             }
         }
 
@@ -489,7 +850,16 @@
             grid.innerHTML = '';
 
             if (selectedBgIndex >= 0 && galleryImages[selectedBgIndex]) {
-                bgContainer.style.backgroundImage = `url('${galleryImages[selectedBgIndex]}')`;
+                const currentImgUrl = galleryImages[selectedBgIndex];
+                const imgCheck = new Image();
+                imgCheck.onload = () => {
+                    bgContainer.style.backgroundImage = `url('${currentImgUrl}')`;
+                };
+                imgCheck.onerror = () => {
+                    console.warn('[Image Load Error]: Switching to next image');
+                    nextBg();
+                };
+                imgCheck.src = currentImgUrl;
             } else {
                 bgContainer.style.backgroundImage = 'none';
             }
@@ -509,9 +879,12 @@
                 grid.appendChild(card);
             });
         }
+
+        loadCloudConfig();
+        loadSettingsUI();
         renderGallery();
 
-        // 5. 제스처 스와이프
+        // 6. 제스처 스와이프
         let startY = 0;
         window.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; }, { passive: true });
         window.addEventListener('touchend', (e) => {
@@ -538,7 +911,7 @@
             setTimeout(() => { wheelThrottle = false; }, 600);
         });
 
-        // 6. 백엔드 연동 라디오 엔진
+        // 7. 오디오 엔진 (메모리 해제 및 가비지 컬렉션 클린업 보강)
         const mainAudio = document.getElementById('mainAudio');
         let currentType = 'none';
         let hlsPlayer = null;
@@ -582,7 +955,7 @@
 
             if (url.includes('.m3u8')) {
                 if (Hls.isSupported()) {
-                    hlsPlayer = new Hls({ manifestLoadingTimeOut: 10000, manifestLoadingMaxRetry: 5 });
+                    hlsPlayer = new Hls({ manifestLoadingTimeOut: 10000, manifestLoadingMaxRetry: 10 });
                     hlsPlayer.loadSource(url);
                     hlsPlayer.attachMedia(mainAudio);
                     hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => mainAudio.play().catch(e => {}));
@@ -604,6 +977,7 @@
 
             currentType = type;
             updateBtnUI();
+            sendAppMessage('AUDIO_PLAY', { type, url });
         }
 
         function playSynthesizedNoise(type) {
@@ -649,6 +1023,7 @@
 
             currentType = type;
             updateBtnUI();
+            sendAppMessage('AUDIO_PLAY', { type });
         }
 
         function stopSynthesizedNoise() {
@@ -665,6 +1040,7 @@
             stopSynthesizedNoise();
             currentType = 'none';
             updateBtnUI();
+            sendAppMessage('AUDIO_STOP');
         }
 
         function updateBtnUI() {
