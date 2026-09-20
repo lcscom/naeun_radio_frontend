@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>스마트 홈 대시보드 & 라디오</title>
+    <!-- HLS.js 오디오 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
@@ -31,6 +32,7 @@
             filter: brightness(1);
         }
 
+        /* 상단 라디오 컨트롤 바 */
         .top-radio-bar {
             position: fixed; top: 12px; right: 12px; z-index: 99999;
             display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
@@ -71,6 +73,7 @@
             border-color: rgba(255, 255, 255, 0.25);
         }
 
+        /* 우측 슬라이딩 설정 패널 */
         #settings-panel {
             position: fixed; top: 0; right: -420px;
             width: 380px; height: 100vh;
@@ -135,6 +138,7 @@
             display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
         }
 
+        /* 대시보드 메인 레이아웃 */
         .dashboard-container {
             position: relative; z-index: 2; display: flex; flex-direction: column;
             justify-content: center; align-items: center; height: 100vh; width: 100vw;
@@ -282,7 +286,6 @@
     </div>
 
     <script>
-        // Render.com 백엔드 주소 연동
         const RENDER_BACKEND_URL = "https://naeun-radio.onrender.com";
 
         // 1. 실시간 시계 & D-Day
@@ -332,7 +335,7 @@
         fetchWeather();
         setInterval(fetchWeather, 300000);
 
-        // 3. 감성 명언
+        // 3. 명언
         const QUOTES = [
             { quote: "삶이 있는 한 희망은 있다.", author: "키케로" },
             { quote: "오늘 할 수 있는 일에 전력을 다하라.", author: "괴테" },
@@ -378,7 +381,7 @@
         }
         loadCloudConfig();
 
-        // 백엔드 연동 구글 포토 파서
+        // [구글 포토 연동 실행]
         async function fetchGooglePhotoAlbum() {
             const input = document.getElementById('googlePhotoUrlInput');
             const albumUrl = input.value.trim();
@@ -388,18 +391,18 @@
                 const res = await fetch(`${RENDER_BACKEND_URL}/api/parse_google_photos?url=${encodeURIComponent(albumUrl)}`);
                 const data = await res.json();
 
-                if (data.status === 'success' && data.images.length > 0) {
+                if (data.status === 'success' && data.images && data.images.length > 0) {
                     galleryImages = [...data.images, ...galleryImages];
                     selectedBgIndex = 0;
                     input.value = '';
                     saveGalleryState();
                     renderGallery();
-                    alert(`구글 포토 앨범에서 ${data.images.length}개의 사진을 성공적으로 가져왔습니다!`);
+                    alert(`🎉 구글 포토 앨범에서 ${data.images.length}개의 사진을 성공적으로 가져왔습니다!`);
                 } else {
                     alert(data.message || "구글 포토 사진을 가져올 수 없습니다.");
                 }
             } catch(e) {
-                alert("백엔드 서버 통신 에러가 발생했습니다. Render.com 백엔드 가동 상태를 확인해 주세요.");
+                alert("Render.com 백엔드 통신 에러가 발생했습니다. 백엔드 가동 상태를 확인해 주세요.");
             }
         }
 
